@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun HarvestLinkApp() {
-    var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.BROWSE) }
+    var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     var selectedProduce by remember { mutableStateOf<Produce?>(null) }
     var showFilters by remember { mutableStateOf(false) }
 
@@ -80,13 +80,18 @@ fun HarvestLinkApp() {
             Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                 Surface(modifier = Modifier.padding(innerPadding)) {
                     when (currentDestination) {
-                        AppDestinations.HOME -> PlaceholderScreen("Home Screen")
+                        AppDestinations.HOME -> HomeScreen(
+                            onProduceClick = { selectedProduce = it },
+                            onFilterClick = { showFilters = true },
+                            onNavigateToOrders = { currentDestination = AppDestinations.ORDERS },
+                            onNavigateToMessages = { currentDestination = AppDestinations.MESSAGES }
+                        )
                         AppDestinations.BROWSE -> BrowseScreen(
                             onProduceClick = { selectedProduce = it },
                             onFilterClick = { showFilters = true }
                         )
-                        AppDestinations.ORDERS -> PlaceholderScreen("Orders Screen")
-                        AppDestinations.MESSAGES -> PlaceholderScreen("Messages Screen")
+                        AppDestinations.ORDERS -> OrdersScreen()
+                        AppDestinations.MESSAGES -> MessagesScreen()
                         AppDestinations.PROFILE -> PlaceholderScreen("Profile Screen")
                     }
                 }

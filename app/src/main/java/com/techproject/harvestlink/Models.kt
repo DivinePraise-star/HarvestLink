@@ -24,6 +24,27 @@ data class Produce(
     val category: String
 )
 
+enum class OrderStatus {
+    PENDING, PROCESSING, DELIVERED, CANCELLED
+}
+
+data class Order(
+    val id: String,
+    val produce: Produce,
+    val quantity: Int,
+    val totalPrice: Double,
+    val status: OrderStatus,
+    val orderDate: String
+)
+
+data class Message(
+    val id: String,
+    val senderName: String,
+    val lastMessage: String,
+    val timestamp: String,
+    val unreadCount: Int = 0
+)
+
 val sampleFarmers = listOf(
     Farmer("1", "Ritah Patience", "Kasese, Uganda", 4.8, 127, isOnline = true),
     Farmer("2", "Samuel Mukisa", "Masaka, Kampala", 4.9, 93, isOnline = true)
@@ -40,4 +61,15 @@ val sampleProduce = listOf(
         "Sweet and crunchy carrots, perfect for snacks or cooking.",
         "March 6, 2026", sampleFarmers[1], category = "Vegetables"
     )
+)
+
+val sampleOrders = listOf(
+    Order("ORD001", sampleProduce[0], 5, 200.0, OrderStatus.DELIVERED, "Oct 12, 2023"),
+    Order("ORD002", sampleProduce[1], 10, 300.0, OrderStatus.PROCESSING, "Oct 15, 2023"),
+    Order("ORD003", sampleProduce[0], 2, 80.0, OrderStatus.PENDING, "Oct 18, 2023")
+)
+
+val sampleMessages = listOf(
+    Message("1", "Ritah Patience", "Is the delivery time okay for you?", "10:30 AM", 1),
+    Message("2", "Samuel Mukisa", "I have added more carrots to the stock.", "Yesterday", 0)
 )
