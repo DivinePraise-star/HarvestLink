@@ -73,8 +73,8 @@ val sampleMessages = listOf(
     Message("1", "Ritah Patience", "Is the delivery time okay for you?", "10:30 AM", 1),
     Message("2", "Samuel Mukisa", "I have added more carrots to the stock.", "Yesterday", 0)
 )
-<<<<<<< Updated upstream
-=======
+
+// ── Farmer-side models ────────────────────────────────────────────────────────
 
 enum class ListingStatus { ACTIVE, PENDING, SOLD }
 
@@ -130,4 +130,3 @@ val sampleFarmerOrderRequests = listOf(
         isResponded = false
     )
 )
->>>>>>> Stashed changes

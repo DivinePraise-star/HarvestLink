@@ -38,10 +38,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun HarvestLinkApp() {
-<<<<<<< Updated upstream
-=======
     var isFarmerMode by rememberSaveable { mutableStateOf(false) }
->>>>>>> Stashed changes
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     var selectedProduce by remember { mutableStateOf<Produce?>(null) }
     var selectedRequest by remember { mutableStateOf<FarmerOrderRequest?>(null) }
@@ -84,22 +81,6 @@ fun HarvestLinkApp() {
         ) {
             Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                 Surface(modifier = Modifier.padding(innerPadding)) {
-<<<<<<< Updated upstream
-                    when (currentDestination) {
-                        AppDestinations.HOME -> HomeScreen(
-                            onProduceClick = { selectedProduce = it },
-                            onFilterClick = { showFilters = true },
-                            onNavigateToOrders = { currentDestination = AppDestinations.ORDERS },
-                            onNavigateToMessages = { currentDestination = AppDestinations.MESSAGES }
-                        )
-                        AppDestinations.BROWSE -> BrowseScreen(
-                            onProduceClick = { selectedProduce = it },
-                            onFilterClick = { showFilters = true }
-                        )
-                        AppDestinations.ORDERS -> OrdersScreen()
-                        AppDestinations.MESSAGES -> MessagesScreen()
-                        AppDestinations.PROFILE -> PlaceholderScreen("Profile Screen")
-=======
                     if (isFarmerMode) {
                         when (currentDestination) {
                             AppDestinations.HOME -> FarmerDashboardScreen(
@@ -133,7 +114,6 @@ fun HarvestLinkApp() {
                                 onToggle = { isFarmerMode = true }
                             )
                         }
->>>>>>> Stashed changes
                     }
                 }
             }
