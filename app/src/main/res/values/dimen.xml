@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="chatBoxBoarderRadius">28dp</dimen>
+    <dimen name="chatDropDownIconsSize">24dp</dimen>
+</resources>

@@ -1,3 +1,7 @@
 <resources>
-    <string name="app_name">HarvestLink</string>
+    <string name="app_name">MyHarvestLink</string>
+    <string name="upButton">Back</string>
+    <string name="seller">SELLER</string>
+    <string name="messagesScreenHeader">Messages</string>
+    <string name="orderScreenHeader">Track Order</string>
 </resources>
