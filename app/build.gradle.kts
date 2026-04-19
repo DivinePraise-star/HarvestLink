@@ -5,11 +5,7 @@ plugins {
 
 android {
     namespace = "com.techproject.harvestlink"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.techproject.harvestlink"

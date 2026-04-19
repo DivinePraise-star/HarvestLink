@@ -24,21 +24,106 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.techproject.harvestlink.ui.theme.HarvestLinkTheme
 
+// Authentication states
+enum class AuthState {
+    SPLASH,
+    ONBOARDING,
+    WELCOME,
+    SIGN_IN,
+    SIGN_UP,
+    FORGOT_PASSWORD,
+    AUTHENTICATED
+}
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             HarvestLinkTheme {
-                HarvestLinkApp()
+                HarvestLinkAppWithAuth()
             }
         }
     }
 }
 
 @Composable
-fun HarvestLinkApp() {
-    var isFarmerMode by rememberSaveable { mutableStateOf(false) }
+fun HarvestLinkAppWithAuth() {
+    var authState by remember { mutableStateOf(AuthState.SPLASH) }
+    var userRole by rememberSaveable { mutableStateOf<String?>(null) }
+    var hasSeenOnboarding by rememberSaveable { mutableStateOf(false) }
+
+    when (authState) {
+        AuthState.SPLASH -> {
+            SplashScreen(
+                onSplashComplete = {
+                    if (hasSeenOnboarding) {
+                        authState = AuthState.WELCOME
+                    } else {
+                        authState = AuthState.ONBOARDING
+                    }
+                }
+            )
+        }
+
+        AuthState.ONBOARDING -> {
+            OnboardingScreen(
+                onFinish = {
+                    hasSeenOnboarding = true
+                    authState = AuthState.WELCOME
+                }
+            )
+        }
+
+        AuthState.WELCOME -> {
+            WelcomeScreen(
+                onSignInClick = { authState = AuthState.SIGN_IN },
+                onSignUpClick = { authState = AuthState.SIGN_UP },
+                onGuestClick = {
+                    userRole = "buyer"
+                    authState = AuthState.AUTHENTICATED
+                }
+            )
+        }
+
+        AuthState.SIGN_IN -> {
+            SignInScreen(
+                onBackClick = { authState = AuthState.WELCOME },
+                onSignInSuccess = { role ->
+                    userRole = role
+                    authState = AuthState.AUTHENTICATED
+                },
+                onForgotPassword = { authState = AuthState.FORGOT_PASSWORD }
+            )
+        }
+
+        AuthState.SIGN_UP -> {
+            SignUpScreen(
+                onBackClick = { authState = AuthState.WELCOME },
+                onSignUpSuccess = { role ->
+                    userRole = role
+                    authState = AuthState.AUTHENTICATED
+                }
+            )
+        }
+
+        AuthState.FORGOT_PASSWORD -> {
+            ForgotPasswordScreen(
+                onBackClick = { authState = AuthState.SIGN_IN },
+                onResetSent = { authState = AuthState.SIGN_IN }
+            )
+        }
+
+        AuthState.AUTHENTICATED -> {
+            // Launch the main app with the user's role
+            MainAppContent(userRole = userRole)
+        }
+    }
+}
+
+@Composable
+fun MainAppContent(userRole: String?) {
+    var isFarmerMode by rememberSaveable { mutableStateOf(userRole == "farmer") }
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     var selectedProduce by remember { mutableStateOf<Produce?>(null) }
     var selectedRequest by remember { mutableStateOf<FarmerOrderRequest?>(null) }
@@ -82,6 +167,7 @@ fun HarvestLinkApp() {
             Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                 Surface(modifier = Modifier.padding(innerPadding)) {
                     if (isFarmerMode) {
+                        // Farmer Mode Screens
                         when (currentDestination) {
                             AppDestinations.HOME -> FarmerDashboardScreen(
                                 onOrderRequestClick = { selectedRequest = it }
@@ -96,6 +182,7 @@ fun HarvestLinkApp() {
                             else -> PlaceholderScreen("${currentDestination.label} (Farmer)")
                         }
                     } else {
+                        // Buyer Mode Screens
                         when (currentDestination) {
                             AppDestinations.HOME -> HomeScreen(
                                 onProduceClick = { selectedProduce = it },
@@ -154,12 +241,17 @@ fun ModeToggleScreen(isFarmerMode: Boolean, onToggle: () -> Unit) {
 
 @Composable
 fun PlaceholderScreen(name: String) {
-    Text(
-        text = "Welcome to $name",
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
-    )
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "Welcome to $name",
+            style = MaterialTheme.typography.headlineMedium
+        )
+    }
 }
 
 enum class AppDestinations(val label: String, val icon: ImageVector) {
