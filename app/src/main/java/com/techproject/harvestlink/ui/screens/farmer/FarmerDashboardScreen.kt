@@ -20,9 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import com.techproject.harvestlink.data.MoreData.sampleFarmerListings
-import com.techproject.harvestlink.data.MoreData.sampleFarmerOrderRequests
+import com.techproject.harvestlink.data.MoreData
 import com.techproject.harvestlink.model.FarmerListing
 import com.techproject.harvestlink.model.FarmerOrderRequest
 import com.techproject.harvestlink.model.ListingStatus
@@ -31,11 +29,27 @@ import com.techproject.harvestlink.model.ListingStatus
 fun FarmerDashboardScreen(
     onOrderRequestClick: (FarmerOrderRequest) -> Unit = {}
 ) {
-    val activeListings = sampleFarmerListings.count { it.status == ListingStatus.ACTIVE }
-    val pendingRequests = sampleFarmerOrderRequests.count { !it.isResponded }
-    val totalEarnings = sampleFarmerListings
-        .filter { it.status == ListingStatus.SOLD }
-        .sumOf { it.pricePerUnit * it.quantitySold }
+    var listings by remember { mutableStateOf<List<FarmerListing>>(emptyList()) }
+    var orderRequests by remember { mutableStateOf<List<FarmerOrderRequest>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        isLoading = true
+        error = null
+        try {
+            listings = MoreData.fetchFarmerListings()
+            orderRequests = MoreData.fetchFarmerOrderRequests()
+        } catch (e: Exception) {
+            error = e.localizedMessage ?: "Unknown error"
+        } finally {
+            isLoading = false
+        }
+    }
+
+    val activeListings = listings.count { it.status == ListingStatus.ACTIVE }
+    val pendingRequests = orderRequests.count { !it.isResponded }
+    val totalEarnings = listings.filter { it.status == ListingStatus.SOLD }.sumOf { it.pricePerUnit * it.quantitySold }
 
     Column(
         modifier = Modifier
@@ -76,6 +90,19 @@ fun FarmerDashboardScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+            return@Column
+        }
+        if (error != null) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Error: $error", color = Color.Red)
+            }
+            return@Column
+        }
 
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(24.dp),
@@ -180,11 +207,9 @@ fun FarmerDashboardScreen(
                     color = Color(0xFF1B3D2F)
                 )
             }
-
-            items(sampleFarmerOrderRequests) { request ->
+            items(orderRequests) { request ->
                 OrderRequestCard(request = request, onClick = { onOrderRequestClick(request) })
             }
-
             item {
                 Text(
                     text = "My Listings",
@@ -193,8 +218,7 @@ fun FarmerDashboardScreen(
                     color = Color(0xFF1B3D2F)
                 )
             }
-
-            items(sampleFarmerListings) { listing ->
+            items(listings) { listing ->
                 FarmerListingCard(listing)
             }
         }

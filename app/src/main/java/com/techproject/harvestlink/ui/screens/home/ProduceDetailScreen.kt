@@ -142,7 +142,7 @@ fun ProduceDetailScreen(
                             Column(modifier = Modifier.weight(1f)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = produce.farmer.name,
+                                        text = "Farmer",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 16.sp
                                     )
@@ -150,14 +150,14 @@ fun ProduceDetailScreen(
                                     Box(modifier = Modifier.size(8.dp).background(Color(0xFF4CAF50), CircleShape))
                                 }
                                 Text(
-                                    text = "📍 ${produce.farmer.location}",
+                                    text = "ID: ${produce.farmerId}",
                                     color = Color.Gray,
                                     fontSize = 13.sp
                                 )
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.Star, null, tint = Color(0xFFFFC107), modifier = Modifier.size(16.dp))
-                                Text(text = produce.farmer.rating.toString(), fontWeight = FontWeight.Bold)
+                                Text(text = produce.rating.toString(), fontWeight = FontWeight.Bold)
                             }
                         }
                         TextButton(

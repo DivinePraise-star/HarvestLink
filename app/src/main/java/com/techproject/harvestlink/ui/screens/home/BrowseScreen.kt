@@ -30,10 +30,20 @@ fun BrowseScreen(
     onProduceClick: (Produce) -> Unit,
     onFilterClick: () -> Unit
 ) {
-
-    val categories = listOf("All", "Vegetables", "Fruits", "Grains")
-    var selectedCategory by remember { mutableStateOf("All") }
+    var produceList by remember { mutableStateOf<List<Produce>>(emptyList()) }
+    var farmers by remember { mutableStateOf<List<User.Farmer>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
     var searchQuery by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        isLoading = true
+        try {
+            produceList = MoreData.fetchProduce()
+            farmers = MoreData.fetchFarmers()
+        } finally {
+            isLoading = false
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -41,6 +51,13 @@ fun BrowseScreen(
             .background(Color(0xFFFBF8F3)) // Light cream background
             .padding(16.dp)
     ) {
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+            return@Column
+        }
+
         Text(
             text = "Fresh from local farms",
             style = MaterialTheme.typography.headlineMedium,
@@ -87,70 +104,101 @@ fun BrowseScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Categories
+        // Featured Farmers
+        Text(
+            text = "Featured Farmers",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 12.dp),
+            color = Color(0xFF1B3D2F)
+        )
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            items(categories) { category ->
-                FilterChip(
-                    selected = selectedCategory == category,
-                    onClick = { selectedCategory = category },
-                    label = { Text(category) },
-                    shape = RoundedCornerShape(20.dp),
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFF1B3D2F),
-                        selectedLabelColor = Color.White,
-                        containerColor = Color.White,
-                        labelColor = Color.Gray
-                    ),
-                    border = null
-                )
+            items(farmers) { farmer ->
+                FarmerCard(farmer)
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(24.dp),
-            contentPadding = PaddingValues(bottom = 80.dp)
+        // Available Produce
+        Text(
+            text = "Available Produce",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 12.dp),
+            color = Color(0xFF1B3D2F)
+        )
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            // Featured Farmers
-            item {
-                Text(
-                    text = "Featured Farmers",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 12.dp),
-                    color = Color(0xFF1B3D2F)
+            items(produceList) { produce ->
+                ProduceCard(
+                    produce = produce,
+                    modifier = Modifier.width(160.dp),
+                    onClick = { onProduceClick(produce) }
                 )
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    MoreData.farmers.forEach { farmer ->
-                        FarmerCard(farmer)
-                    }
-                }
             }
+        }
+    }
+}
 
-            // Available Produce
-            item {
-                Text(
-                    text = "Available Produce",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 12.dp),
-                    color = Color(0xFF1B3D2F)
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProduceCard(
+    produce: Produce,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(140.dp)
+                    .background(if (produce.name.contains("Tomato")) Color(0xFFFFEBEE) else Color(0xFFFFF3E0))
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .align(Alignment.TopEnd),
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.White.copy(alpha = 0.9f)
                 ) {
-                    MoreData.produceList.forEach { produce ->
-                        ProduceCard(
-                            produce = produce,
-                            modifier = Modifier.weight(1f),
-                            onClick = { onProduceClick(produce) }
+                    Row(
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Star,
+                            contentDescription = null,
+                            tint = Color(0xFFFFC107),
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Text(
+                            text = produce.rating.toString(),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
+            }
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = produce.name,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = Color(0xFF1B3D2F)
+                )
             }
         }
     }
@@ -220,64 +268,6 @@ fun FarmerCard(farmer: User.Farmer) {
                     text = farmer.rating.toString(),
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ProduceCard(
-    produce: Produce,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(140.dp)
-                    .background(if (produce.name.contains("Tomato")) Color(0xFFFFEBEE) else Color(0xFFFFF3E0))
-            ) {
-                Surface(
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .align(Alignment.TopEnd),
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color.White.copy(alpha = 0.9f)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Star,
-                            contentDescription = null,
-                            tint = Color(0xFFFFC107),
-                            modifier = Modifier.size(12.dp)
-                        )
-                        Text(
-                            text = produce.rating.toString(),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-            Column(modifier = Modifier.padding(12.dp)) {
-                Text(
-                    text = produce.name,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    color = Color(0xFF1B3D2F)
                 )
             }
         }

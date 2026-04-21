@@ -143,10 +143,17 @@ fun MainScreen(
             )
         }
         composable(route = "ProduceDetailScreen") {
-            ProduceDetailScreen(
-                produce = harvestViewModel.homeUiState.currentProduce,
-                onBackClick = { navController.popBackStack() }
-            )
+            val produce = harvestViewModel.homeUiState.currentProduce
+            if (produce != null) {
+                ProduceDetailScreen(
+                    produce = produce,
+                    onBackClick = { navController.popBackStack() }
+                )
+            } else {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No produce selected.")
+                }
+            }
         }
         composable(route = "FarmerOrderRequestScreen/{requestId}") { entry ->
             val requestId = entry.arguments?.getString("requestId")
@@ -211,5 +218,3 @@ fun BottomNavBar(
         }
     }
 }
-
-

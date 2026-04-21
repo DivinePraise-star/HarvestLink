@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,19 +18,19 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,19 +40,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.techproject.harvestlink.R
-import com.techproject.harvestlink.data.LocalUserData
-import com.techproject.harvestlink.data.MoreData
-import com.techproject.harvestlink.model.Order
-import com.techproject.harvestlink.model.OrderStatus
-import com.techproject.harvestlink.ui.HarvestViewModel
-import com.techproject.harvestlink.ui.ScreenHeader
-import com.techproject.harvestlink.ui.theme.HarvestLinkTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.techproject.harvestlink.R
+import com.techproject.harvestlink.data.MoreData
+import com.techproject.harvestlink.model.Order
+import com.techproject.harvestlink.model.OrderStatus
+import com.techproject.harvestlink.ui.ScreenHeader
+import com.techproject.harvestlink.ui.theme.HarvestLinkTheme
 
 @Composable
 fun TrackOrderScreen(){
@@ -66,12 +62,27 @@ fun TrackOrderScreen(){
             orderUIState = orderUIState
         )
     }else{
-        OrderDetails(
-            order = orderUIState.selectedOrder,
-            onClick = {
-                orderViewModel.toggleOrderDetails()
+        val selectedOrder = orderUIState.selectedOrder
+        if (selectedOrder != null) {
+            OrderDetails(
+                order = selectedOrder,
+                onClick = {
+                    orderViewModel.toggleOrderDetails()
+                }
+            )
+        } else {
+            // Fallback UI if no order is selected
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text("No order selected", color = Color.Red)
+                Button(onClick = { orderViewModel.toggleOrderDetails() }) {
+                    Text("Back to Orders")
+                }
             }
-        )
+        }
     }
 
 }
@@ -110,6 +121,17 @@ fun OrderListItem(
 ) {
     val timeFormatter = remember { SimpleDateFormat("d MMMM yyyy h:mm a", Locale.getDefault()) }
     val timeString = timeFormatter.format(Date(item.orderDate))
+
+    // Fetch farmer name from Supabase
+    var farmerName by remember { mutableStateOf("Loading...") }
+    LaunchedEffect(item.farmerId) {
+        try {
+            val farmers = MoreData.fetchFarmers()
+            farmerName = farmers.find { it.id == item.farmerId }?.name ?: "Unknown"
+        } catch (_: Exception) {
+            farmerName = "Unknown"
+        }
+    }
 
     Column(
         modifier = modifier
@@ -208,15 +230,12 @@ fun OrderListItem(
                 .fillMaxWidth()
                 .padding(top = 2.dp)
         ){
-            val userName = remember(item.farmerId) {
-                MoreData.farmers.find{ it.id == item.farmerId }?.name ?: "Unknown"
-            }
             Text(
                 text = "UGX ${ item.items.sumOf {it.quantity * it.product.price}}",
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = userName,
+                text = farmerName,
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
@@ -232,6 +251,16 @@ fun OrderDetails(
     order: Order,
     onClick: () -> Unit
 ) {
+    // Fetch farmer name from Supabase
+    var farmerName by remember { mutableStateOf("Loading...") }
+    LaunchedEffect(order.farmerId) {
+        try {
+            val farmers = MoreData.fetchFarmers()
+            farmerName = farmers.find { it.id == order.farmerId }?.name ?: "Unknown"
+        } catch (_: Exception) {
+            farmerName = "Unknown"
+        }
+    }
     Column(
         modifier = Modifier.fillMaxSize()
     ){
@@ -306,16 +335,13 @@ fun OrderDetails(
                             .size(24.dp)
                     )
                     Column {
-                        val userName = remember(order.farmerId) {
-                            LocalUserData.sampleUsers.find { it.id == order.farmerId }?.name ?: "Unknown"
-                        }
                         Text(
                             text = "Farmer",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
-                            text = userName,
+                            text = farmerName,
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface
@@ -675,5 +701,3 @@ fun TrackOrderScreenPreview(){
         TrackOrderScreen()
     }
 }
-
-

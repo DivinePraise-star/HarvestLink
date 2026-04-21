@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CopilotDiffPersistence">
+    <option name="pendingDiffs">
+      <map>
+        <entry key="/OrderUiState (snapshot).kt">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="/OrderUiState (snapshot).kt" />
+              <option name="originalContent" value="package com.techproject.harvestlink.ui.screens.order&#10;&#10;import com.techproject.harvestlink.data.LocalOrderData&#10;import com.techproject.harvestlink.model.Order&#10;&#10;data class OrderUiState(&#10;    val orders: List&lt;Order&gt; = emptyList(),&#10;    val showOrderDetails: Boolean = false,&#10;    val selectedOrder: Order = LocalOrderData.sampleOrderData[0],&#10;)&#10;" />
+              <option name="updatedContent" value="package com.techproject.harvestlink.ui.screens.order&#13;&#10;&#13;&#10;import com.techproject.harvestlink.data.LocalOrderData&#13;&#10;import com.techproject.harvestlink.model.Order&#13;&#10;&#13;&#10;data class OrderUiState(&#13;&#10;    val orders: List&lt;Order&gt; = emptyList(),&#13;&#10;    val showOrderDetails: Boolean = false,&#13;&#10;    val selectedOrder: Order? = null,&#13;&#10;)" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

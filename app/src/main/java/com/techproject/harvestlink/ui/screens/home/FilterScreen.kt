@@ -15,7 +15,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.techproject.harvestlink.data.MoreData.produceList
 import com.techproject.harvestlink.ui.HarvestViewModel
 
 /**
@@ -35,9 +34,10 @@ fun FilterScreen(
 ) {
 
     var distanceRange by remember { mutableStateOf(0f..50f) }
-    val categories = produceList.map { it.category }.distinct()
     val filterUiState = harvestViewModel.filterUiState
     val priceRange = filterUiState.priceRange
+    // Replace static produceList with ViewModel-provided categories
+    val categories = harvestViewModel.categories
 
     Column(
         modifier = Modifier

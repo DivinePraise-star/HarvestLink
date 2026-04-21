@@ -4,8 +4,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.techproject.harvestlink.data.MoreData
 import com.techproject.harvestlink.model.Produce
+import kotlinx.coroutines.launch
 
 class HarvestViewModel : ViewModel() {
     var filterUiState by mutableStateOf(FilterUiState())
@@ -14,20 +16,53 @@ class HarvestViewModel : ViewModel() {
     var homeUiState by mutableStateOf(HomeUiState())
         private set
 
+    // Produce loading state
+    var produceList by mutableStateOf<List<Produce>>(emptyList())
+        private set
+    var produceLoading by mutableStateOf(true)
+        private set
+    var produceError by mutableStateOf<String?>(null)
+        private set
+
+    // Expose distinct categories from produceList
+    val categories: List<String>
+        get() = produceList.map { it.category }.distinct().filter { it.isNotBlank() }
+
+    // Filtered list state
+    var filteredList by mutableStateOf<List<Produce>>(emptyList())
+        private set
+
+    init {
+        loadProduce()
+    }
+
+    private fun loadProduce() {
+        produceLoading = true
+        produceError = null
+        viewModelScope.launch {
+            try {
+                val loaded = MoreData.fetchProduce()
+                produceList = loaded
+                filteredList = loaded
+                // Set default currentProduce if not set
+                if (loaded.isNotEmpty()) {
+                    homeUiState = homeUiState.copy(currentProduce = loaded[0])
+                }
+            } catch (e: Exception) {
+                produceError = e.localizedMessage ?: "Unknown error"
+            } finally {
+                produceLoading = false
+            }
+        }
+    }
 
     fun updateCurrentProduce(produce: Produce) {
         homeUiState = homeUiState.copy(currentProduce = produce)
     }
 
-
     /**
      * Filter Logic
      */
-    private val originalList = MoreData.produceList
-
-    var filteredList by mutableStateOf(originalList)
-        private set
-
     fun updatePriceRange(range: ClosedFloatingPointRange<Float>) {
         filterUiState = filterUiState.copy(priceRange = range)
         applyFilters()
@@ -48,16 +83,12 @@ class HarvestViewModel : ViewModel() {
 
     private fun applyFilters() {
         val filter = filterUiState
-
-        filteredList = originalList.filter { item ->
-
+        filteredList = produceList.filter { item ->
             val matchesCategory =
                 filter.categories.isEmpty() ||
                         filter.categories.contains(item.category)
-
             val matchesPrice =
                 item.price.toFloat() in filter.priceRange
-
             matchesCategory && matchesPrice
         }
     }
@@ -82,10 +113,8 @@ data class FilterUiState(
 )
 
 data class HomeUiState(
-    val currentProduce: Produce = MoreData.produceList[0],
+    val currentProduce: Produce? = null,
     val beginner: Boolean = true,
     val isFarmer:Boolean = false,
     val showNavBar: Boolean = true
 )
-
-

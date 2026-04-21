@@ -36,6 +36,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.techproject.harvestlink.R
+import com.techproject.harvestlink.data.MoreData
 import com.techproject.harvestlink.data.LocalUserData
 import com.techproject.harvestlink.model.Message
 import com.techproject.harvestlink.model.MessageStatus
@@ -68,13 +70,27 @@ fun ChatDetails(
     onClick: () -> Unit,
     chatDetailsViewModel: ChatDetailsViewModel = viewModel(factory = ChatDetailsViewModel.Factory),
 ) {
-
     val conversation = chatDetailsViewModel.userConversation.collectAsState().value
     val recipient = conversation.recipientId
     val currentUserId = conversation.currentUser
 
+    // Fetch user from Supabase
+    var user by remember { mutableStateOf<User?>(null) }
+    var userLoading by remember { mutableStateOf(true) }
+    var userError by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(recipient) {
+        userLoading = true
+        userError = null
+        try {
+            val users = MoreData.fetchFarmers() + MoreData.fetchBuyers()
+            user = users.find { it.id == recipient }
+        } catch (e: Exception) {
+            userError = e.localizedMessage ?: "Unknown error"
+        } finally {
+            userLoading = false
+        }
+    }
 
-    val user = LocalUserData.sampleUsers.find { it.id == recipient }
     val groupedMessages = conversation.conversation.groupBy { message ->
         getGroupHeader(message.timestamp)
     }
@@ -110,10 +126,24 @@ fun ChatDetails(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        ChatTopBar(
-            user = user,
-            onClick = onClick
-        )
+        when {
+            userLoading -> {
+                Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                    Text("Loading user...")
+                }
+            }
+            userError != null -> {
+                Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                    Text("Error loading user: $userError")
+                }
+            }
+            else -> {
+                ChatTopBar(
+                    user = user,
+                    onClick = onClick
+                )
+            }
+        }
 
         Box(modifier = Modifier
             .weight(1f)
@@ -197,7 +227,7 @@ fun ChatTopBar(
             )
             Box{
                 Icon(
-                    painter = painterResource(user?.profileImageRes ?: R.drawable.user_profile),
+                    painter = painterResource(R.drawable.user_profile),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier

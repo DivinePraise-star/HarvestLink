@@ -22,7 +22,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.techproject.harvestlink.data.MoreData
-import com.techproject.harvestlink.data.MoreData.produceList
 import com.techproject.harvestlink.model.OrderStatus
 import com.techproject.harvestlink.model.Produce
 
@@ -34,10 +33,29 @@ fun HomeScreen(
     onNavigateToOrders: () -> Unit,
     onNavigateToMessages: () -> Unit
 ) {
-    val categories = produceList.map { it.category }.distinct()
+
+    var produceList by remember { mutableStateOf<List<Produce>>(emptyList()) }
+    var farmers by remember { mutableStateOf<List<com.techproject.harvestlink.model.User.Farmer>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var loadError by remember { mutableStateOf<String?>(null) }
     var selectedCategory by remember { mutableStateOf("All") }
     var searchQuery by remember { mutableStateOf("") }
     val userName = "Divine" // Simulated user name
+
+    val categories = produceList.map { it.category }.distinct().ifEmpty { listOf("All") }
+
+    LaunchedEffect(Unit) {
+        isLoading = true
+        loadError = null
+        try {
+            produceList = MoreData.fetchProduce()
+            farmers = MoreData.fetchFarmers()
+        } catch (e: Exception) {
+            loadError = e.localizedMessage ?: "Failed to load data"
+        } finally {
+            isLoading = false
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -45,6 +63,18 @@ fun HomeScreen(
             .background(Color(0xFFFBF8F3))
             .padding(horizontal = 16.dp)
     ) {
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+            return@Column
+        }
+        if (loadError != null) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Could not load data: $loadError", color = Color.Red)
+            }
+            return@Column
+        }
         Spacer(modifier = Modifier.height(16.dp))
 
         // Top Bar: Location and Notifications
@@ -226,7 +256,7 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    items(MoreData.produceList) { produce ->
+                    items(produceList) { produce ->
                         ProduceCard(
                             produce = produce,
                             modifier = Modifier.width(160.dp),
@@ -246,7 +276,7 @@ fun HomeScreen(
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    MoreData.farmers.forEach { farmer ->
+                    farmers.forEach { farmer ->
                         FarmerCard(farmer)
                     }
                 }

@@ -22,7 +22,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,7 +37,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.techproject.harvestlink.R
-import com.techproject.harvestlink.data.LocalUserData
+import com.techproject.harvestlink.data.MoreData
 import com.techproject.harvestlink.ui.theme.HarvestLinkTheme
 import com.techproject.harvestlink.ui.ScreenHeader
 import java.text.SimpleDateFormat
@@ -102,7 +105,25 @@ fun ChatItem(
     isOnline: Boolean = false,
     onClick: (String) -> Unit
 ) {
-    val user = LocalUserData.sampleUsers.find { it.id == id }
+    // Fetch user name from Supabase
+    val userNameState = remember { mutableStateOf<String?>(null) }
+    val userLoadingState = remember { mutableStateOf(true) }
+    val userErrorState = remember { mutableStateOf<String?>(null) }
+    val userName = userNameState.value
+    val userLoading = userLoadingState.value
+    val userError = userErrorState.value
+    LaunchedEffect(id) {
+        userLoadingState.value = true
+        userErrorState.value = null
+        try {
+            val users = MoreData.fetchFarmers() + MoreData.fetchBuyers()
+            userNameState.value = users.find { it.id == id }?.name
+        } catch (e: Exception) {
+            userErrorState.value = e.localizedMessage ?: "Unknown error"
+        } finally {
+            userLoadingState.value = false
+        }
+    }
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -140,12 +161,16 @@ fun ChatItem(
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = user?.name ?: id,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                when {
+                    userLoading -> Text("Loading...", style = MaterialTheme.typography.titleMedium)
+                    userError != null -> Text("Error", style = MaterialTheme.typography.titleMedium)
+                    else -> Text(
+                        text = userName ?: id,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
                 Text(
                     text = lastMessage,
                     style = MaterialTheme.typography.bodyMedium,
