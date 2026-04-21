@@ -82,6 +82,7 @@ fun MainScreen(
                 FarmerDashboardScreen(
                     onOrderRequestClick = {
                         navController.navigate("FarmerOrderRequestScreen/${it.id}")
+                        harvestViewModel.toggleNavBar()
                     }
                 )
             }else{
@@ -111,6 +112,7 @@ fun MainScreen(
                 FarmerDashboardScreen(
                     onOrderRequestClick = {
                         navController.navigate("FarmerOrderRequestScreen/${it.id}")
+                        harvestViewModel.toggleNavBar()
                     }
                 )
             }else{ TrackOrderScreen() }

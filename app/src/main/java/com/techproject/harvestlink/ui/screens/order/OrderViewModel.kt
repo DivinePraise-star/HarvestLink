@@ -14,7 +14,7 @@ class OrderViewModel: ViewModel() {
     val orderUiState: StateFlow<OrderUiState> = _orderUiState
 
     init {
-        loadOrders("user5")
+        loadOrders("buyer-001")
     }
 
     fun toggleOrderDetails() {

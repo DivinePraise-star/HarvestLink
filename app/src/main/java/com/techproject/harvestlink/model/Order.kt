@@ -1,14 +1,20 @@
 package com.techproject.harvestlink.model
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class Order(
     val id: Int = 0,
+    @SerialName(value = "order_date")
     val orderDate: Long = 0L,
+    @SerialName(value = "order_status")
     val orderStatus: OrderStatus = OrderStatus.PENDING,
+    @SerialName(value = "delivery_address")
     val deliveryAddress: String = "",
+    @SerialName(value = "user_id")
     val userId: String = "",
+    @SerialName(value = "farmer_id")
     val farmerId: String = "",
     val items: List<OrderItem> = emptyList()
 )
