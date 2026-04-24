@@ -86,13 +86,15 @@ fun MainScreen(
                 )
             }else{
                 HomeScreen (
+                    harvestViewModel = harvestViewModel,
                     onProduceClick = {
                         navController.navigate("ProduceDetailScreen")
                         harvestViewModel.updateCurrentProduce(it)
                     },
                     onFilterClick = {navController.navigate("FilterScreen")},
                     onNavigateToOrders = { navController.navigate(AppDestinations.ORDERS.name) },
-                    onNavigateToMessages = { navController.navigate(AppDestinations.MESSAGES.name) }
+                    onNavigateToMessages = { navController.navigate(AppDestinations.MESSAGES.name) },
+                    onSeeAllClick = { navController.navigate(AppDestinations.BROWSE.name) }
                 )
             }
         }
@@ -101,7 +103,10 @@ fun MainScreen(
                 PlaceholderScreen("Welcome to Browse (Farmer)")
             }else{
                 BrowseScreen(
-                    onProduceClick = { harvestViewModel.updateCurrentProduce(it) },
+                    onProduceClick = { 
+                        harvestViewModel.updateCurrentProduce(it)
+                        navController.navigate("ProduceDetailScreen")
+                    },
                     onFilterClick = { navController.navigate("FilterScreen") }
                 )
             }

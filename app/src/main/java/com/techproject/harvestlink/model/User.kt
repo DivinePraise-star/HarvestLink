@@ -1,6 +1,7 @@
 package com.techproject.harvestlink.model
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 
 sealed class User {
     abstract val id: String
@@ -14,11 +15,11 @@ sealed class User {
         override val id: String = "",
         override val name: String = "",
         override val email: String = "",
-        override val phoneNumber: String = "",
-        override val isOnline: Boolean = false,
-        val deliveryAddress: String? = null,
-        val preferredPaymentMethod: String? = null,
-        val orderHistoryCount: Int = 0
+        @SerialName("phone_number") override val phoneNumber: String = "",
+        @SerialName("is_online") override val isOnline: Boolean = false,
+        @SerialName("delivery_address") val deliveryAddress: String? = null,
+        @SerialName("preferred_payment_method") val preferredPaymentMethod: String? = null,
+        @SerialName("order_history_count") val orderHistoryCount: Int = 0
     ) : User()
 
     @Serializable
@@ -26,12 +27,12 @@ sealed class User {
         override val id: String = "",
         override val name: String = "",
         override val email: String = "",
-        override val phoneNumber: String = "",
-        override val isOnline: Boolean = false,
+        @SerialName("phone_number") override val phoneNumber: String = "",
+        @SerialName("is_online") override val isOnline: Boolean = false,
         val location: String = "",
         val rating: Double = 0.0,
-        val salesCompleted: Int = 0,
-        val farmName: String? = null,
+        @SerialName("sales_completed") val salesCompleted: Int = 0,
+        @SerialName("farm_name") val farmName: String? = null,
     ) : User()
 }
 
@@ -41,11 +42,11 @@ data class Produce(
     val name: String = "",
     val price: Double = 0.0,
     val unit: String = "",
-    val availableQuantity: Int = 0,
+    @SerialName("available_quantity") val availableQuantity: Int = 0,
     val rating: Double = 0.0,
     val description: String = "",
-    val harvestDate: String = "",
-    val farmerId: String = "",
+    @SerialName("harvest_date") val harvestDate: String = "",
+    @SerialName("farmer_id") val farmerId: String = "",
     val imageUrl: String? = null,
     val category: String = ""
 )

@@ -92,9 +92,14 @@ fun FilterScreen(
                         selected = filterUiState.categories.contains(category),
                         onClick = { harvestViewModel.toggleCategory(category) },
                         label = { Text(category) },
+                        leadingIcon = if (filterUiState.categories.contains(category)) {
+                            { Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                        } else null,
+                        shape = RoundedCornerShape(20.dp),
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = Color(0xFF1B3D2F),
-                            selectedLabelColor = Color.White
+                            selectedLabelColor = Color.White,
+                            selectedLeadingIconColor = Color.White
                         )
                     )
                 }
@@ -104,21 +109,34 @@ fun FilterScreen(
 
             // Price Range Filter
             Text(
-                text = "Price Range ($)",
+                text = "Price Range (UGX)",
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
                 color = Color(0xFF1B3D2F)
             )
-            Text(
-                text = "$${priceRange.start.toInt()} - $${priceRange.endInclusive.toInt()}",
-                color = Color.Gray
-            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "UGX ${"%,d".format(priceRange.start.toInt())}",
+                    color = Color(0xFF1B3D2F),
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "UGX ${"%,d".format(priceRange.endInclusive.toInt())}",
+                    color = Color(0xFF1B3D2F),
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
             RangeSlider(
                 value = priceRange,
                 onValueChange = { harvestViewModel.updatePriceRange(it) },
-                valueRange = 0f..1000f,
+                valueRange = 0f..10000f,
                 colors = SliderDefaults.colors(
                     activeTrackColor = Color(0xFF1B3D2F),
+                    inactiveTrackColor = Color(0xFFE8F5E9),
                     thumbColor = Color(0xFF1B3D2F)
                 )
             )

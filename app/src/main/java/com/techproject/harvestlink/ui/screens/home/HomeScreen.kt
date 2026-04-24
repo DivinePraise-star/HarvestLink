@@ -15,46 +15,52 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.techproject.harvestlink.data.MoreData
 import com.techproject.harvestlink.model.OrderStatus
 import com.techproject.harvestlink.model.Produce
+import com.techproject.harvestlink.ui.HarvestViewModel
+import com.techproject.harvestlink.ui.screens.chat.ChatListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    harvestViewModel: HarvestViewModel,
     onProduceClick: (Produce) -> Unit,
     onFilterClick: () -> Unit,
     onNavigateToOrders: () -> Unit,
-    onNavigateToMessages: () -> Unit
+    onNavigateToMessages: () -> Unit,
+    onSeeAllClick: () -> Unit,
+    chatListViewModel: ChatListViewModel = viewModel(factory = ChatListViewModel.Factory)
 ) {
+    val userMessages by chatListViewModel.userMessages.collectAsState()
+    val buyerProfile = harvestViewModel.buyerProfile
 
-    var produceList by remember { mutableStateOf<List<Produce>>(emptyList()) }
-    var farmers by remember { mutableStateOf<List<com.techproject.harvestlink.model.User.Farmer>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var loadError by remember { mutableStateOf<String?>(null) }
-    var selectedCategory by remember { mutableStateOf("All") }
-    var searchQuery by remember { mutableStateOf("") }
-    val userName = "Divine" // Simulated user name
+    val produceList = harvestViewModel.produceList
+    val farmers = harvestViewModel.farmersList
+    val activeOrdersCount = harvestViewModel.activeOrdersCount
+    val isLoading = harvestViewModel.produceLoading
+    val loadError = harvestViewModel.produceError
 
-    val categories = produceList.map { it.category }.distinct().ifEmpty { listOf("All") }
+    var selectedCategory by rememberSaveable { mutableStateOf("All") }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    
+    val userName = buyerProfile?.name ?: "Guest"
+    val unreadMessagesCount = userMessages.userMessages.size
 
-    LaunchedEffect(Unit) {
-        isLoading = true
-        loadError = null
-        try {
-            produceList = MoreData.fetchProduce()
-            farmers = MoreData.fetchFarmers()
-        } catch (e: Exception) {
-            loadError = e.localizedMessage ?: "Failed to load data"
-        } finally {
-            isLoading = false
-        }
+    val categories = harvestViewModel.categories
+
+    val filteredProduce = produceList.filter {
+        val matchesSearch = it.name.contains(searchQuery, ignoreCase = true) || it.category.contains(searchQuery, ignoreCase = true)
+        val matchesCategory = selectedCategory == "All" || it.category == selectedCategory
+        matchesSearch && matchesCategory
     }
 
     Column(
@@ -92,7 +98,7 @@ fun HomeScreen(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "Pune, Maharashtra",
+                    text = "Kasese, Uganda",
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
                     color = Color(0xFF1B3D2F)
@@ -138,8 +144,6 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     // Active Orders Summary
-                    //val activeOrders = sampleOrders.count { it.status != OrderStatus.DELIVERED && it.status != OrderStatus.CANCELLED }
-                    val activeOrders = 45
                     Card(
                         modifier = Modifier.weight(1f).clickable { onNavigateToOrders() },
                         shape = RoundedCornerShape(16.dp),
@@ -147,12 +151,11 @@ fun HomeScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(text = "Active Orders", fontSize = 12.sp, color = Color(0xFF2E7D32))
-                            Text(text = activeOrders.toString(), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B3D2F))
+                            Text(text = activeOrdersCount.toString(), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B3D2F))
                         }
                     }
 
                     // Unread Messages Summary
-                    val unreadMessages = 3
                     Card(
                         modifier = Modifier.weight(1f).clickable { onNavigateToMessages() },
                         shape = RoundedCornerShape(16.dp),
@@ -160,7 +163,7 @@ fun HomeScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(text = "Messages", fontSize = 12.sp, color = Color(0xFF1565C0))
-                            Text(text = unreadMessages.toString(), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B3D2F))
+                            Text(text = unreadMessagesCount.toString(), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B3D2F))
                         }
                     }
                 }
@@ -247,7 +250,7 @@ fun HomeScreen(
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1B3D2F)
                     )
-                    TextButton(onClick = { /* Navigate to Browse */ }) {
+                    TextButton(onClick = onSeeAllClick) {
                         Text("See all", color = Color(0xFF1B3D2F))
                     }
                 }
@@ -256,7 +259,7 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    items(produceList) { produce ->
+                    items(filteredProduce) { produce ->
                         ProduceCard(
                             produce = produce,
                             modifier = Modifier.width(160.dp),

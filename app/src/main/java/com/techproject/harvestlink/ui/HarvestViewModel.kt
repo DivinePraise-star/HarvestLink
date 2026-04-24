@@ -7,6 +7,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.techproject.harvestlink.data.MoreData
 import com.techproject.harvestlink.model.Produce
+import com.techproject.harvestlink.model.User
+import com.techproject.harvestlink.model.OrderStatus
 import kotlinx.coroutines.launch
 
 class HarvestViewModel : ViewModel() {
@@ -14,6 +16,15 @@ class HarvestViewModel : ViewModel() {
         private set
 
     var homeUiState by mutableStateOf(HomeUiState())
+        private set
+
+    var buyerProfile by mutableStateOf<User.Buyer?>(null)
+        private set
+
+    // Data for Buyer Home
+    var farmersList by mutableStateOf<List<User.Farmer>>(emptyList())
+        private set
+    var activeOrdersCount by mutableStateOf(0)
         private set
 
     // Produce loading state
@@ -26,7 +37,7 @@ class HarvestViewModel : ViewModel() {
 
     // Expose distinct categories from produceList
     val categories: List<String>
-        get() = produceList.map { it.category }.distinct().filter { it.isNotBlank() }
+        get() = (listOf("All") + produceList.map { it.category }.distinct()).filter { it.isNotBlank() }
 
     // Filtered list state
     var filteredList by mutableStateOf<List<Produce>>(emptyList())
@@ -34,6 +45,33 @@ class HarvestViewModel : ViewModel() {
 
     init {
         loadProduce()
+    }
+
+    fun setRole(isFarmer: Boolean) {
+        homeUiState = homeUiState.copy(isFarmer = isFarmer)
+        if (!isFarmer) {
+            loadBuyerData()
+        }
+    }
+
+    private fun loadBuyerData() {
+        viewModelScope.launch {
+            try {
+                val buyers = MoreData.fetchBuyers()
+                if (buyers.isNotEmpty()) {
+                    buyerProfile = buyers[0]
+                    val allOrders = MoreData.fetchOrders()
+                    activeOrdersCount = allOrders.count { 
+                        it.userId == buyerProfile?.id && 
+                        it.orderStatus != OrderStatus.DELIVERED && 
+                        it.orderStatus != OrderStatus.CANCELLED 
+                    }
+                }
+                farmersList = MoreData.fetchFarmers()
+            } catch (e: Exception) {
+                // Handle error
+            }
+        }
     }
 
     private fun loadProduce() {
@@ -52,6 +90,30 @@ class HarvestViewModel : ViewModel() {
                 produceError = e.localizedMessage ?: "Unknown error"
             } finally {
                 produceLoading = false
+            }
+        }
+    }
+
+    fun updateProfile(buyer: User.Buyer) {
+        viewModelScope.launch {
+            try {
+                MoreData.updateBuyer(buyer)
+                buyerProfile = buyer
+            } catch (e: Exception) {
+                // Handle error
+            }
+        }
+    }
+
+    fun deleteAccount(onDeleted: () -> Unit) {
+        val id = buyerProfile?.id ?: return
+        viewModelScope.launch {
+            try {
+                MoreData.deleteBuyer(id)
+                buyerProfile = null
+                onDeleted()
+            } catch (e: Exception) {
+                // Handle error
             }
         }
     }
@@ -97,6 +159,18 @@ class HarvestViewModel : ViewModel() {
         homeUiState = homeUiState.copy(beginner = !homeUiState.beginner)
     }
 
+    fun updateAuthState(state: AuthState) {
+        homeUiState = homeUiState.copy(authState = state)
+    }
+
+    fun logout() {
+        homeUiState = homeUiState.copy(
+            beginner = true,
+            authState = AuthState.SIGN_IN
+        )
+        buyerProfile = null
+    }
+
     fun toggleFarmer(){
         homeUiState = homeUiState.copy(isFarmer = !homeUiState.isFarmer)
     }
@@ -109,12 +183,23 @@ class HarvestViewModel : ViewModel() {
 
 data class FilterUiState(
     val categories: List<String> = emptyList(),
-    val priceRange: ClosedFloatingPointRange<Float> = 0f..500f,
+    val priceRange: ClosedFloatingPointRange<Float> = 0f..10000f,
 )
 
 data class HomeUiState(
     val currentProduce: Produce? = null,
     val beginner: Boolean = true,
     val isFarmer:Boolean = false,
-    val showNavBar: Boolean = true
+    val showNavBar: Boolean = true,
+    val authState: AuthState = AuthState.SPLASH
 )
+
+enum class AuthState {
+    SPLASH,
+    ONBOARDING,
+    WELCOME,
+    SIGN_IN,
+    SIGN_UP,
+    FORGOT_PASSWORD,
+    AUTHENTICATED
+}

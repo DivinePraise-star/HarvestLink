@@ -17,6 +17,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -283,7 +285,10 @@ fun OrderDetails(
         }
 
         Column(
-            modifier = Modifier.padding(12.dp)
+            modifier = Modifier
+                .padding(12.dp)
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
         ){
             if(order.orderStatus != OrderStatus.CANCELLED){
                 ProgressIndictor(
@@ -458,29 +463,29 @@ fun OrderDetails(
                     )
                 }
             }
-            Spacer(modifier = Modifier.weight(1f))
-            Row{
-                OutlinedButton(
-                    shape = RoundedCornerShape(8.dp),
-                    onClick = {},
-                    modifier = Modifier
-                        .padding(end = 8.dp)
-                        .weight(1f)
-                ) {
-                    Text(
-                        text = "Contact Farmer"
-                    )
-                }
-                Button(
-                    shape = RoundedCornerShape(8.dp),
-                    onClick = {},
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = "Reorder"
-                    )
-                }
-
+        }
+        Row(
+            modifier = Modifier.padding(12.dp)
+        ){
+            OutlinedButton(
+                shape = RoundedCornerShape(8.dp),
+                onClick = {},
+                modifier = Modifier
+                    .padding(end = 8.dp)
+                    .weight(1f)
+            ) {
+                Text(
+                    text = "Contact Farmer"
+                )
+            }
+            Button(
+                shape = RoundedCornerShape(8.dp),
+                onClick = {},
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "Reorder"
+                )
             }
         }
     }

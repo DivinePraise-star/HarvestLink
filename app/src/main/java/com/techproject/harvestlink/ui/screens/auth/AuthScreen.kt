@@ -3,10 +3,9 @@ package com.techproject.harvestlink.ui.screens.auth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.navigation.NavController
+import com.techproject.harvestlink.ui.AuthState
 import com.techproject.harvestlink.ui.HarvestViewModel
 
 
@@ -14,7 +13,7 @@ import com.techproject.harvestlink.ui.HarvestViewModel
 fun AuthScreen(
     harvestViewModel: HarvestViewModel
 ) {
-    var authState by remember { mutableStateOf(AuthState.SPLASH) }
+    val authState = harvestViewModel.homeUiState.authState
     var userRole by rememberSaveable { mutableStateOf<String?>(null) }
     var hasSeenOnboarding by rememberSaveable { mutableStateOf(false) }
 
@@ -23,9 +22,9 @@ fun AuthScreen(
             SplashScreen(
                 onSplashComplete = {
                     if (hasSeenOnboarding) {
-                        authState = AuthState.WELCOME
+                        harvestViewModel.updateAuthState(AuthState.WELCOME)
                     } else {
-                        authState = AuthState.ONBOARDING
+                        harvestViewModel.updateAuthState(AuthState.ONBOARDING)
                     }
                 }
             )
@@ -35,62 +34,55 @@ fun AuthScreen(
             OnboardingScreen(
                 onFinish = {
                     hasSeenOnboarding = true
-                    authState = AuthState.WELCOME
+                    harvestViewModel.updateAuthState(AuthState.WELCOME)
                 }
             )
         }
 
         AuthState.WELCOME -> {
             WelcomeScreen(
-                onSignInClick = { authState = AuthState.SIGN_IN },
-                onSignUpClick = { authState = AuthState.SIGN_UP },
+                onSignInClick = { harvestViewModel.updateAuthState(AuthState.SIGN_IN) },
+                onSignUpClick = { harvestViewModel.updateAuthState(AuthState.SIGN_UP) },
                 onGuestClick = {
                     userRole = "buyer"
-                    authState = AuthState.AUTHENTICATED
+                    harvestViewModel.updateAuthState(AuthState.AUTHENTICATED)
                 }
             )
         }
 
         AuthState.SIGN_IN -> {
             SignInScreen(
-                onBackClick = { authState = AuthState.WELCOME },
+                onBackClick = { harvestViewModel.updateAuthState(AuthState.WELCOME) },
                 onSignInSuccess = { role ->
                     userRole = role
-                    authState = AuthState.AUTHENTICATED
+                    harvestViewModel.updateAuthState(AuthState.AUTHENTICATED)
                 },
-                onForgotPassword = { authState = AuthState.FORGOT_PASSWORD }
+                onForgotPassword = { harvestViewModel.updateAuthState(AuthState.FORGOT_PASSWORD) }
             )
         }
 
         AuthState.SIGN_UP -> {
             SignUpScreen(
-                onBackClick = { authState = AuthState.WELCOME },
+                onBackClick = { harvestViewModel.updateAuthState(AuthState.WELCOME) },
                 onSignUpSuccess = { role ->
                     userRole = role
-                    authState = AuthState.AUTHENTICATED
+                    harvestViewModel.updateAuthState(AuthState.AUTHENTICATED)
                 }
             )
         }
 
         AuthState.FORGOT_PASSWORD -> {
             ForgotPasswordScreen(
-                onBackClick = { authState = AuthState.SIGN_IN },
-                onResetSent = { authState = AuthState.SIGN_IN }
+                onBackClick = { harvestViewModel.updateAuthState(AuthState.SIGN_IN) },
+                onResetSent = { harvestViewModel.updateAuthState(AuthState.SIGN_IN) }
             )
         }
 
         AuthState.AUTHENTICATED -> {
+            harvestViewModel.setRole(userRole == "farmer")
             harvestViewModel.toggleBeginner()
+            // Ensure we are ready for next time
+            harvestViewModel.updateAuthState(AuthState.SIGN_IN)
         }
     }
-}
-
-enum class AuthState {
-    SPLASH,
-    ONBOARDING,
-    WELCOME,
-    SIGN_IN,
-    SIGN_UP,
-    FORGOT_PASSWORD,
-    AUTHENTICATED
 }
