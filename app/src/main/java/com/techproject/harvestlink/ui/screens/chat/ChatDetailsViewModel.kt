@@ -57,7 +57,6 @@ class ChatDetailsViewModel(
         val tempId = UUID.randomUUID().toString()
 
         val pendingMessage = Message(
-            id = "123456789",
             senderId = currentUserId,
             conversationId = conversationId,
             type = type,
@@ -73,12 +72,17 @@ class ChatDetailsViewModel(
 
         viewModelScope.launch {
             try {
-                messageRepo.insertMessage(pendingMessage.copy(status = MessageStatus.sent))
+                val realMessageId = messageRepo.insertMessage(pendingMessage.copy(status = MessageStatus.sent))
 
                 _messagesUi.update { ui ->
                     ui.copy(
                         messages = ui.messages.map { msg ->
-                            if (msg.metadata == tempId) msg.copy(status = MessageStatus.sent) else msg
+                            if (msg.metadata == tempId) {
+                                msg.copy(
+                                    id = realMessageId,
+                                    status = MessageStatus.sent
+                                )
+                            } else msg
                         }
                     )
                 }

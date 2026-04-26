@@ -8,6 +8,8 @@ import com.techproject.harvestlink.model.User
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.postgrest.rpc
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 class MessageRepo(): ChatRepository {
     override suspend fun fetchUser(userId: String): User {
@@ -48,15 +50,16 @@ class MessageRepo(): ChatRepository {
         }
     }
 
-    override suspend fun insertMessage(message: Message) {
-        client.postgrest
-            .rpc("send_message", mapOf(
-                "p_message_id"      to message.id,
-                "p_conversation_id" to message.conversationId,
-                "p_sender_id"       to message.senderId,
-                "p_content"         to message.content,
-                "p_type"            to message.type,
-                "p_reply_to_id"     to message.replyToMessageId,
-            ))
+    override suspend fun insertMessage(message: Message): String {
+        val payload = buildJsonObject {
+            put("p_conversation_id", message.conversationId)
+            put("p_sender_id", message.senderId)
+            put("p_content", message.content)
+            put("p_type", message.type.name)
+            put("p_reply_to_id", message.replyToMessageId)
+        }
+        val result = client.postgrest.rpc("send_message",payload)
+
+        return result.decodeAs<String>()
     }
 }

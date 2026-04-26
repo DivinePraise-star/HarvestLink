@@ -8,5 +8,5 @@ interface ChatRepository {
     suspend fun fetchUser(userId: String): User
     suspend fun getUsersMessages(conversationId: String): List<Message>
     suspend fun getConversation(userId: String):List<ConversationDetails>
-    suspend fun insertMessage(message: Message)
+    suspend fun insertMessage(message: Message): String
 }
