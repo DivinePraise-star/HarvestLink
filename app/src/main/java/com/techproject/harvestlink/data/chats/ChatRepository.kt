@@ -1,10 +1,12 @@
 package com.techproject.harvestlink.data.chats
 
+import com.techproject.harvestlink.model.ConversationDetails
 import com.techproject.harvestlink.model.Message
-import kotlinx.coroutines.flow.Flow
+import com.techproject.harvestlink.model.User
 
 interface ChatRepository {
-    fun getUsersMessages(userId:String): Flow<List<Message>>
-    fun getConversation(userId: String, recipientId: String): Flow<List<Message>>
+    suspend fun fetchUser(userId: String): User
+    suspend fun getUsersMessages(conversationId: String): List<Message>
+    suspend fun getConversation(userId: String):List<ConversationDetails>
     suspend fun insertMessage(message: Message)
 }

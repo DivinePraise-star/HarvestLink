@@ -1,40 +1,53 @@
 package com.techproject.harvestlink.model
 
-import kotlinx.serialization.Serializable
+import androidx.room.Entity
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-sealed class User {
-    abstract val id: String
-    abstract val name: String
-    abstract val email: String
-    abstract val phoneNumber: String
-    abstract val isOnline: Boolean
+@Serializable
+data class User (
+    val id: String,
+    val name: String,
+    val email: String,
+    @SerialName("phone_number")
+    val phoneNumber: String,
+    @SerialName("is_online")
+    val isOnline: Boolean
+)
 
-    @Serializable
-    data class Buyer(
-        override val id: String = "",
-        override val name: String = "",
-        override val email: String = "",
-        @SerialName("phone_number") override val phoneNumber: String = "",
-        @SerialName("is_online") override val isOnline: Boolean = false,
-        @SerialName("delivery_address") val deliveryAddress: String? = null,
-        @SerialName("preferred_payment_method") val preferredPaymentMethod: String? = null,
-        @SerialName("order_history_count") val orderHistoryCount: Int = 0
-    ) : User()
+@Serializable
+data class Buyer(
+    val id: String = "",
+    val name: String = "",
+    val email: String = "",
+    @SerialName("phone_number")
+    val phoneNumber: String = "",
+    @SerialName("is_online")
+    val isOnline: Boolean = false,
+    @SerialName("delivery_address")
+    val deliveryAddress: String? = null,
+    @SerialName("preferred_payment_method")
+    val preferredPaymentMethod: String? = null,
+    @SerialName("order_history_count")
+    val orderHistoryCount: Int = 0
+)
 
-    @Serializable
-    data class Farmer(
-        override val id: String = "",
-        override val name: String = "",
-        override val email: String = "",
-        @SerialName("phone_number") override val phoneNumber: String = "",
-        @SerialName("is_online") override val isOnline: Boolean = false,
-        val location: String = "",
-        val rating: Double = 0.0,
-        @SerialName("sales_completed") val salesCompleted: Int = 0,
-        @SerialName("farm_name") val farmName: String? = null,
-    ) : User()
-}
+@Serializable
+data class Farmer(
+    val id: String = "",
+    val name: String = "",
+    val email: String = "",
+    @SerialName("phone_number")
+    val phoneNumber: String = "",
+    @SerialName("is_online")
+    val isOnline: Boolean = false,
+    val location: String = "",
+    val rating: Double = 0.0,
+    @SerialName("sales_completed")
+    val salesCompleted: Int = 0,
+    @SerialName("farm_name")
+    val farmName: String? = null,
+)
 
 @Serializable
 data class Produce(
@@ -42,7 +55,7 @@ data class Produce(
     val name: String = "",
     val price: Double = 0.0,
     val unit: String = "",
-    @SerialName("available_quantity") val availableQuantity: Int = 0,
+    @SerialName("available_quantity") val availableQuantity: Double = 0.0,
     val rating: Double = 0.0,
     val description: String = "",
     @SerialName("harvest_date") val harvestDate: String = "",

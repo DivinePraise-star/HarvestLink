@@ -1,6 +1,5 @@
 package com.techproject.harvestlink.ui.screens.chat
 
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
@@ -36,7 +35,6 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,12 +52,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.techproject.harvestlink.R
-import com.techproject.harvestlink.data.MoreData
-import com.techproject.harvestlink.data.LocalUserData
 import com.techproject.harvestlink.model.Message
 import com.techproject.harvestlink.model.MessageStatus
 import com.techproject.harvestlink.model.MessageType
-import com.techproject.harvestlink.model.User
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -70,29 +65,13 @@ fun ChatDetails(
     onClick: () -> Unit,
     chatDetailsViewModel: ChatDetailsViewModel = viewModel(factory = ChatDetailsViewModel.Factory),
 ) {
-    val conversation = chatDetailsViewModel.userConversation.collectAsState().value
-    val recipient = conversation.recipientId
-    val currentUserId = conversation.currentUser
+    val messageUi = chatDetailsViewModel.messagesUi.collectAsState().value
+    val recipient = chatDetailsViewModel.recipientId
+    val currentUserId = chatDetailsViewModel.currentUserId
 
-    // Fetch user from Supabase
-    var user by remember { mutableStateOf<User?>(null) }
-    var userLoading by remember { mutableStateOf(true) }
-    var userError by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(recipient) {
-        userLoading = true
-        userError = null
-        try {
-            val users = MoreData.fetchFarmers() + MoreData.fetchBuyers()
-            user = users.find { it.id == recipient }
-        } catch (e: Exception) {
-            userError = e.localizedMessage ?: "Unknown error"
-        } finally {
-            userLoading = false
-        }
-    }
 
-    val groupedMessages = conversation.conversation.groupBy { message ->
-        getGroupHeader(message.timestamp)
+    val groupedMessages = messageUi.messages.groupBy { message ->
+        getGroupHeader(message.createdAt)
     }
 
     // 1. Image Picker
@@ -101,7 +80,7 @@ fun ChatDetails(
     ) { uri ->
         uri?.let { chatDetailsViewModel.sendMessage(
             text = it.toString(),
-            type = MessageType.IMAGE
+            type = MessageType.image
         )}
     }
 
@@ -111,7 +90,7 @@ fun ChatDetails(
     ) { uri ->
         uri?.let { chatDetailsViewModel.sendMessage(
             text = it.toString(),
-            type = MessageType.VIDEO
+            type = MessageType.video
         )}
     }
 
@@ -121,30 +100,15 @@ fun ChatDetails(
     ) { uri ->
         uri?.let { chatDetailsViewModel.sendMessage(
             text = it.toString(),
-            type = MessageType.FILE
+            type = MessageType.file
         )}
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        when {
-            userLoading -> {
-                Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                    Text("Loading user...")
-                }
-            }
-            userError != null -> {
-                Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                    Text("Error loading user: $userError")
-                }
-            }
-            else -> {
-                ChatTopBar(
-                    user = user,
-                    onClick = onClick
-                )
-            }
-        }
-
+        ChatTopBar(
+            user = messageUi,
+            onClick = onClick
+        )
         Box(modifier = Modifier
             .weight(1f)
             .fillMaxWidth()) {
@@ -154,8 +118,8 @@ fun ChatDetails(
                     .padding(horizontal = 8.dp),
                 reverseLayout = true
             ) {
-                groupedMessages.forEach { (date, messagesInDate) ->
-                    items(messagesInDate) { message ->
+                groupedMessages.forEach { (date,messagesInDate) ->
+                    items(messagesInDate) { message  ->
                         MessageBubble(
                             message = message,
                             isMe = message.senderId == currentUserId
@@ -207,7 +171,7 @@ fun getGroupHeader(timestamp: Long): String {
  */
 @Composable
 fun ChatTopBar(
-    user: User?,
+    user: MessageUi,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ){
@@ -250,7 +214,7 @@ fun ChatTopBar(
                 modifier = Modifier.padding(start =8.dp)
             ) {
                 Text(
-                    text = user?.name ?: "Name",
+                    text = user.recipientName ?: "Unknown",
                     style = MaterialTheme.typography.titleLarge
                 )
                 Text(text = "Online")
@@ -389,7 +353,7 @@ fun MessageBubble(
     isMe: Boolean
 ){
     val timeFormatter = remember { SimpleDateFormat("h:mm a", Locale.getDefault()) }
-    val timeString = timeFormatter.format(Date(message.timestamp))
+    val timeString = timeFormatter.format(Date(message.createdAt))
     val bubbleColor = if (isMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
 
     Column(
@@ -408,10 +372,10 @@ fun MessageBubble(
             )
         ) {
             when (message.type) {
-                MessageType.TEXT -> {
+                MessageType.text -> {
                     Text(text = message.content, modifier = Modifier.padding(12.dp))
                 }
-                MessageType.IMAGE -> {
+                MessageType.image -> {
                     AsyncImage(
                         model = message.content,
                         contentDescription = "Image message",
@@ -421,7 +385,7 @@ fun MessageBubble(
                         contentScale = ContentScale.Crop
                     )
                 }
-                MessageType.VIDEO -> {
+                MessageType.video -> {
                     Box(contentAlignment = Alignment.Center) {
                         AsyncImage(
                             model = message.content, // Coil can show video frames
@@ -433,7 +397,7 @@ fun MessageBubble(
                         Icon(Icons.Default.Favorite, contentDescription = "Play", modifier = Modifier.size(48.dp))
                     }
                 }
-                MessageType.FILE -> {
+                MessageType.file -> {
                     Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Person, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
@@ -455,9 +419,9 @@ fun MessageBubble(
             if (isMe) {
                 Spacer(modifier = Modifier.width(4.dp))
                 val statusIcon = when (message.status) {
-                    MessageStatus.READ -> R.drawable.check_read
-                    MessageStatus.DELIVERED -> R.drawable.check_read
-                    MessageStatus.SENT -> R.drawable.check
+                    MessageStatus.read -> R.drawable.check_read
+                    MessageStatus.delivered -> R.drawable.check_read
+                    MessageStatus.sent -> R.drawable.check
                     else -> R.drawable.clock_waiting
                 }
 
@@ -465,7 +429,7 @@ fun MessageBubble(
                     painter = painterResource(id = statusIcon),
                     contentDescription = null,
                     modifier = Modifier.size(16.dp),
-                    tint = if (message.status == MessageStatus.READ) Color(0xFF00BFFF) else Color.Gray
+                    tint = if (message.status == MessageStatus.read) Color(0xFF00BFFF) else Color.Gray
                 )
             }
         }

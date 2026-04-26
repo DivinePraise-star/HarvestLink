@@ -1,5 +1,6 @@
 package com.techproject.harvestlink.ui.screens.chat
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -11,44 +12,85 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.techproject.harvestlink.HarvestLinkApplication
 import com.techproject.harvestlink.data.chats.ChatRepository
 import com.techproject.harvestlink.model.Message
+import com.techproject.harvestlink.model.MessageStatus
 import com.techproject.harvestlink.model.MessageType
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
 
 class ChatDetailsViewModel(
-    private val offlineMessageRepo: ChatRepository,
+    private val messageRepo: ChatRepository,
     savedStateHandle: SavedStateHandle
 ): ViewModel() {
 
-    val currentUserId = "user1"
+    val currentUserId = "3230676f-fc7c-4ca2-a538-8cf168442831"
     val recipientId: String = checkNotNull(savedStateHandle["recipientId"])
+    val conversationId: String = checkNotNull(savedStateHandle["conversationId"])
 
-    val userConversation =  offlineMessageRepo.getConversation(currentUserId, recipientId)
-        .map { UserConversation(
-            conversation = it,
-            recipientId = recipientId
-            )}
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000L),
-            initialValue = UserConversation(recipientId = recipientId)
+    private val _messagesUi = MutableStateFlow(MessageUi())
+    val messagesUi: StateFlow<MessageUi> = _messagesUi
+
+    init {
+        loadMessages(conversationId,recipientId)
+    }
+
+    private fun loadMessages(conversationId: String, recipientId: String){
+        viewModelScope.launch{
+            val messages = messageRepo.getUsersMessages(conversationId)
+            val recipient = messageRepo.fetchUser(recipientId)
+
+            _messagesUi.update {
+                it.copy(
+                    messages = messages,
+                    recipientName = recipient.name,
+                    isOnline = recipient.isOnline
+                )
+            }
+        }
+    }
+
+    fun sendMessage(text: String, type: MessageType = MessageType.text) {
+        if (text.isBlank()) return
+
+        val tempId = UUID.randomUUID().toString()
+
+        val pendingMessage = Message(
+            id = "123456789",
+            senderId = currentUserId,
+            conversationId = conversationId,
+            type = type,
+            content = text,
+            createdAt = System.currentTimeMillis(),
+            status = MessageStatus.sending,
+            metadata = tempId
         )
 
-    fun sendMessage(text: String, type: MessageType = MessageType.TEXT) {
-        if (text.isNotBlank()) {
-            val newMessage = Message(
-                id = UUID.randomUUID().toString(),
-                senderId = currentUserId,
-                receiverId = recipientId,
-                type = type,
-                content = text,
-                timestamp = System.currentTimeMillis()
-            )
-            viewModelScope.launch {
-                offlineMessageRepo.insertMessage(newMessage)
+        _messagesUi.update { ui ->
+            ui.copy(messages = listOf(pendingMessage) + ui.messages)
+        }
+
+        viewModelScope.launch {
+            try {
+                messageRepo.insertMessage(pendingMessage.copy(status = MessageStatus.sent))
+
+                _messagesUi.update { ui ->
+                    ui.copy(
+                        messages = ui.messages.map { msg ->
+                            if (msg.metadata == tempId) msg.copy(status = MessageStatus.sent) else msg
+                        }
+                    )
+                }
+            } catch (e: Exception) {
+                _messagesUi.update { ui ->
+                    ui.copy(
+                        messages = ui.messages.map { msg ->
+                            if (msg.metadata == tempId) msg.copy(status = MessageStatus.error) else msg
+                        }
+                    )
+                }
+                Log.e("RaceParticipant", "Error sending message",e)
             }
         }
     }
@@ -64,8 +106,9 @@ class ChatDetailsViewModel(
     }
 }
 
-data class UserConversation(
-    val conversation: List<Message> = emptyList(),
-    val currentUser: String = "user1",
-    val recipientId: String = ""
+data class MessageUi(
+    val messages: List<Message> = emptyList(),
+    val recipientName: String? = "",
+    val recipientProfilePictureUrl: String? = "",
+    val isOnline: Boolean = false
 )

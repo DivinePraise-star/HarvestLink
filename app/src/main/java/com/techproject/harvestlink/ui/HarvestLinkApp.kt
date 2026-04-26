@@ -123,17 +123,18 @@ fun MainScreen(
             }else{ TrackOrderScreen() }
         }
         composable(route = AppDestinations.MESSAGES.name){
-            ChatList(
-                navToChat = {
-                    navController.navigate("${AppDestinations.MESSAGES.name}/${it}")
-                }
-            )
+            ChatList(navController)
         }
         composable(
-            route = "${AppDestinations.MESSAGES.name}/{recipientId}",
-            arguments =listOf(navArgument("recipientId"){
-                type = NavType.StringType
-            })
+            route = "${AppDestinations.MESSAGES.name}/{conversationId}/{recipientId}",
+            arguments =listOf(
+                navArgument("conversationId"){
+                    type = NavType.StringType
+                },
+                navArgument("recipientId"){
+                    type = NavType.StringType
+                },
+            )
         ){
             ChatDetails(
                 onClick = {navController.popBackStack()}

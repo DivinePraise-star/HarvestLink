@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.techproject.harvestlink.data.MoreData
+import com.techproject.harvestlink.model.Farmer
 import com.techproject.harvestlink.model.Produce
 import com.techproject.harvestlink.model.User
 
@@ -32,7 +33,7 @@ fun BrowseScreen(
     onFilterClick: () -> Unit
 ) {
     var produceList by remember { mutableStateOf<List<Produce>>(emptyList()) }
-    var farmers by remember { mutableStateOf<List<User.Farmer>>(emptyList()) }
+    var farmers by remember { mutableStateOf<List<Farmer>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
 
@@ -47,12 +48,12 @@ fun BrowseScreen(
     }
 
     val filteredProduce = produceList.filter {
-        it.name.contains(searchQuery, ignoreCase = true) || 
+        it.name.contains(searchQuery, ignoreCase = true) ||
         it.category.contains(searchQuery, ignoreCase = true)
     }
 
     val filteredFarmers = farmers.filter {
-        it.name.contains(searchQuery, ignoreCase = true) || 
+        it.name.contains(searchQuery, ignoreCase = true) ||
         it.location.contains(searchQuery, ignoreCase = true)
     }
 
@@ -152,7 +153,7 @@ fun BrowseScreen(
                         color = Color(0xFF1B3D2F)
                     )
                 }
-                
+
                 // Vertical Grid for Produce
                 items(filteredProduce.windowed(2, 2, true)) { rowItems ->
                     Row(
@@ -172,7 +173,7 @@ fun BrowseScreen(
                     }
                 }
             }
-            
+
             if (filteredFarmers.isEmpty() && filteredProduce.isEmpty()) {
                 item {
                     Box(modifier = Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
@@ -219,7 +220,7 @@ fun ProduceCard(
                     style = MaterialTheme.typography.headlineLarge,
                     color = Color.Gray.copy(alpha = 0.3f)
                 )
-                
+
                 Surface(
                     modifier = Modifier
                         .padding(8.dp)
@@ -267,7 +268,7 @@ fun ProduceCard(
 
 @Composable
 fun FarmerCard(
-    farmer: User.Farmer,
+    farmer: Farmer,
     modifier: Modifier = Modifier
 ) {
     Card(

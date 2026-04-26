@@ -38,9 +38,8 @@ fun HomeScreen(
     onNavigateToOrders: () -> Unit,
     onNavigateToMessages: () -> Unit,
     onSeeAllClick: () -> Unit,
-    chatListViewModel: ChatListViewModel = viewModel(factory = ChatListViewModel.Factory)
 ) {
-    val userMessages by chatListViewModel.userMessages.collectAsState()
+
     val buyerProfile = harvestViewModel.buyerProfile
 
     val produceList = harvestViewModel.produceList
@@ -52,8 +51,8 @@ fun HomeScreen(
     var selectedCategory by rememberSaveable { mutableStateOf("All") }
     var searchQuery by rememberSaveable { mutableStateOf("") }
     
-    val userName = buyerProfile?.name ?: "Guest"
-    val unreadMessagesCount = userMessages.userMessages.size
+    val userName = buyerProfile.name
+    val unreadMessagesCount = 9
 
     val categories = harvestViewModel.categories
 

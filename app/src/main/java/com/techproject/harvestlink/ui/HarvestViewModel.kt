@@ -6,6 +6,8 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.techproject.harvestlink.data.MoreData
+import com.techproject.harvestlink.model.Buyer
+import com.techproject.harvestlink.model.Farmer
 import com.techproject.harvestlink.model.Produce
 import com.techproject.harvestlink.model.User
 import com.techproject.harvestlink.model.OrderStatus
@@ -18,11 +20,11 @@ class HarvestViewModel : ViewModel() {
     var homeUiState by mutableStateOf(HomeUiState())
         private set
 
-    var buyerProfile by mutableStateOf<User.Buyer?>(null)
+    var buyerProfile by mutableStateOf<Buyer>(Buyer())
         private set
 
     // Data for Buyer Home
-    var farmersList by mutableStateOf<List<User.Farmer>>(emptyList())
+    var farmersList by mutableStateOf<List<Farmer>>(emptyList())
         private set
     var activeOrdersCount by mutableStateOf(0)
         private set
@@ -94,7 +96,7 @@ class HarvestViewModel : ViewModel() {
         }
     }
 
-    fun updateProfile(buyer: User.Buyer) {
+    fun updateProfile(buyer: Buyer) {
         viewModelScope.launch {
             try {
                 MoreData.updateBuyer(buyer)
@@ -110,7 +112,7 @@ class HarvestViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 MoreData.deleteBuyer(id)
-                buyerProfile = null
+                buyerProfile = Buyer()
                 onDeleted()
             } catch (e: Exception) {
                 // Handle error
@@ -168,7 +170,7 @@ class HarvestViewModel : ViewModel() {
             beginner = true,
             authState = AuthState.SIGN_IN
         )
-        buyerProfile = null
+        buyerProfile = Buyer()
     }
 
     fun toggleFarmer(){

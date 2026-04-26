@@ -36,40 +36,36 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.techproject.harvestlink.R
 import com.techproject.harvestlink.data.MoreData
 import com.techproject.harvestlink.ui.theme.HarvestLinkTheme
 import com.techproject.harvestlink.ui.ScreenHeader
+import com.techproject.harvestlink.ui.screens.AppDestinations
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 @Composable
 fun ChatList(
-    navToChat:(String)->Unit,
+    navController: NavController,
     chatListViewModel: ChatListViewModel = viewModel(factory = ChatListViewModel.Factory)
 ) {
 
-    val userMessages = chatListViewModel.userMessages.collectAsState().value
-    val currentUserId = userMessages.currentUser
+    val conversation = chatListViewModel.conversations.collectAsState().value
 
 //    val lastMessagesPerUser = userMessages.userMessages
-//        .filter { it.senderId == chatUiState.currentUserId || it.receiverId == chatUiState.currentUserId }
-//        .groupBy { if (it.senderId == chatUiState.currentUserId) it.receiverId else it.senderId }
-//        .mapValues { entry -> entry.value.maxByOrNull { it.timestamp } }
-
-    val lastMessagesPerUser = userMessages.userMessages
-            .asSequence()
-            .filter {
-                it.senderId == currentUserId || it.receiverId == currentUserId
-            }
-            .groupBy {
-                if (it.senderId == currentUserId) it.receiverId else it.senderId
-            }
-            .mapValues { (_, messages) ->
-                messages.maxByOrNull { it.timestamp }
-            }
-            .toMap()
+//            .asSequence()
+//            .filter {
+//                it.senderId == currentUserId || it.receiverId == currentUserId
+//            }
+//            .groupBy {
+//                if (it.senderId == currentUserId) it.receiverId else it.senderId
+//            }
+//            .mapValues { (_, messages) ->
+//                messages.maxByOrNull { it.timestamp }
+//            }
+//            .toMap()
 
     Column(modifier = Modifier.fillMaxSize()) {
         ScreenHeader(
@@ -78,14 +74,17 @@ fun ChatList(
                 .padding(12.dp)
         )
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(lastMessagesPerUser.toList()) { (userId, lastMessage) ->
-                if (lastMessage != null) {
+            items(conversation) { each ->
+                if (conversation.isNotEmpty()) {
                     ChatItem(
-                        id = userId,
-                        lastMessage = lastMessage.content,
-                        time = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(lastMessage.timestamp)),
-                        unreadCount = 0,
-                        onClick = navToChat
+                        id = each.conversationId,
+                        userName = each.userName,
+                        lastMessage = each.lastMessage,
+                        time = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(each.lastMessageTimestamp)),
+                        unreadCount = each.unreadCount ?: 0,
+                        onClick = {
+                            navController.navigate("${AppDestinations.MESSAGES.name}/${each.conversationId}/${each.userId}")
+                        }
                     )
                 }
             }
@@ -99,31 +98,13 @@ fun ChatList(
 @Composable
 fun ChatItem(
     id: String,
-    lastMessage: String,
+    lastMessage: String?,
+    userName: String?,
     time: String,
     unreadCount: Int,
     isOnline: Boolean = false,
     onClick: (String) -> Unit
 ) {
-    // Fetch user name from Supabase
-    val userNameState = remember { mutableStateOf<String?>(null) }
-    val userLoadingState = remember { mutableStateOf(true) }
-    val userErrorState = remember { mutableStateOf<String?>(null) }
-    val userName = userNameState.value
-    val userLoading = userLoadingState.value
-    val userError = userErrorState.value
-    LaunchedEffect(id) {
-        userLoadingState.value = true
-        userErrorState.value = null
-        try {
-            val users = MoreData.fetchFarmers() + MoreData.fetchBuyers()
-            userNameState.value = users.find { it.id == id }?.name
-        } catch (e: Exception) {
-            userErrorState.value = e.localizedMessage ?: "Unknown error"
-        } finally {
-            userLoadingState.value = false
-        }
-    }
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -161,18 +142,14 @@ fun ChatItem(
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                when {
-                    userLoading -> Text("Loading...", style = MaterialTheme.typography.titleMedium)
-                    userError != null -> Text("Error", style = MaterialTheme.typography.titleMedium)
-                    else -> Text(
-                        text = userName ?: id,
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
                 Text(
-                    text = lastMessage,
+                    text = userName ?: "Unknown",
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = lastMessage ?: "",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.Gray,
                     maxLines = 1,
