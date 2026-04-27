@@ -5,9 +5,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -27,12 +28,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,8 +44,8 @@ import java.util.Date
 import java.util.Locale
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.techproject.harvestlink.R
-import com.techproject.harvestlink.data.MoreData
 import com.techproject.harvestlink.model.Order
+import com.techproject.harvestlink.model.OrderDetails
 import com.techproject.harvestlink.model.OrderStatus
 import com.techproject.harvestlink.ui.ScreenHeader
 import com.techproject.harvestlink.ui.theme.HarvestLinkTheme
@@ -68,12 +65,12 @@ fun TrackOrderScreen(){
         if (selectedOrder != null) {
             OrderDetails(
                 order = selectedOrder,
+                orderUiState = orderUIState,
                 onClick = {
                     orderViewModel.toggleOrderDetails()
                 }
             )
         } else {
-            // Fallback UI if no order is selected
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -102,14 +99,24 @@ fun OrderList(
             modifier = Modifier
                 .padding(12.dp)
         )
-        LazyColumn {
-            items(orderUIState.orders) { item ->
-                OrderListItem(
-                    item = item,
-                    onClick = {
-                        orderViewModel.showOrderDetails(item)
+        if(orderUIState.orders.isEmpty()){
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize()
+            ) { CircularProgressIndicator() }
+        }else{
+            LazyColumn {
+                orderUIState.orders.forEach { (order, details) ->
+                    item{
+                        OrderListItem(
+                            item = order,
+                            items = details,
+                            onClick = {
+                                orderViewModel.showOrderDetails(order)
+                            }
+                        )
                     }
-                )
+                }
             }
         }
     }
@@ -118,22 +125,12 @@ fun OrderList(
 @Composable
 fun OrderListItem(
     item: Order,
+    items: List<OrderDetails>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val timeFormatter = remember { SimpleDateFormat("d MMMM yyyy h:mm a", Locale.getDefault()) }
     val timeString = timeFormatter.format(Date(item.orderDate))
-
-    // Fetch farmer name from Supabase
-    var farmerName by remember { mutableStateOf("Loading...") }
-    LaunchedEffect(item.farmerId) {
-        try {
-            val farmers = MoreData.fetchFarmers()
-            farmerName = farmers.find { it.id == item.farmerId }?.name ?: "Unknown"
-        } catch (_: Exception) {
-            farmerName = "Unknown"
-        }
-    }
 
     Column(
         modifier = modifier
@@ -145,7 +142,7 @@ fun OrderListItem(
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
             .padding(12.dp)
-            .clickable{
+            .clickable {
                 onClick()
             }
 
@@ -169,9 +166,9 @@ fun OrderListItem(
                     modifier = Modifier
                         .padding(top = 8.dp)
                 ){
-                    item.items.forEach { item ->
+                    items.forEach { item ->
                         Text(
-                            text = "${item.product.name} (${item.quantity} ${item.product.unit})",
+                            text = "${item.produceName} (${item.quantity} ${item.produceUnit})",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -183,13 +180,13 @@ fun OrderListItem(
                 text = item.orderStatus.text,
                 fontWeight = FontWeight.Bold,
                 color = when(item.orderStatus.text){
-                    OrderStatus.DELIVERED.text ->{
+                    OrderStatus.delivered.text ->{
                         MaterialTheme.colorScheme.onPrimaryContainer
                     }
-                    OrderStatus.IN_TRANSIT.text ->{
+                    OrderStatus.in_transit.text ->{
                         if(isSystemInDarkTheme()) Color(0xFFDBEAFE) else Color(0xFF193CB8)
                     }
-                    OrderStatus.PENDING.text ->{
+                    OrderStatus.pending.text ->{
                         if(isSystemInDarkTheme()) Color(0xFFFEF9C2) else Color(0xFF894B00)
                     }
                     else ->{
@@ -201,15 +198,15 @@ fun OrderListItem(
                     .clip(RoundedCornerShape(50))
                     .background(
                         color = when (item.orderStatus.text) {
-                            OrderStatus.DELIVERED.text -> {
+                            OrderStatus.delivered.text -> {
                                 MaterialTheme.colorScheme.primaryContainer
                             }
 
-                            OrderStatus.IN_TRANSIT.text -> {
+                            OrderStatus.in_transit.text -> {
                                 if (isSystemInDarkTheme()) Color(0xFF193CB8) else Color(0xFFDBEAFE)
                             }
 
-                            OrderStatus.PENDING.text -> {
+                            OrderStatus.pending.text -> {
                                 if (isSystemInDarkTheme()) Color(0xFF894B00) else Color(0xFFFEF9C2)
                             }
 
@@ -233,11 +230,11 @@ fun OrderListItem(
                 .padding(top = 2.dp)
         ){
             Text(
-                text = "UGX ${ item.items.sumOf {it.quantity * it.product.price}}",
+                text = "UGX ${items.sumOf { it.producePrice?.times(it.quantity) ?: 0.0 }}",
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = farmerName,
+                text = item.farmerName,
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
@@ -251,18 +248,10 @@ fun OrderListItem(
 @Composable
 fun OrderDetails(
     order: Order,
+    orderUiState: OrderUiState,
     onClick: () -> Unit
 ) {
-    // Fetch farmer name from Supabase
-    var farmerName by remember { mutableStateOf("Loading...") }
-    LaunchedEffect(order.farmerId) {
-        try {
-            val farmers = MoreData.fetchFarmers()
-            farmerName = farmers.find { it.id == order.farmerId }?.name ?: "Unknown"
-        } catch (_: Exception) {
-            farmerName = "Unknown"
-        }
-    }
+    val orderDetails = orderUiState.orders[order]
     Column(
         modifier = Modifier.fillMaxSize()
     ){
@@ -290,7 +279,7 @@ fun OrderDetails(
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
         ){
-            if(order.orderStatus != OrderStatus.CANCELLED){
+            if(order.orderStatus != OrderStatus.cancelled){
                 ProgressIndictor(
                     orderStatus = order.orderStatus,
                     modifier = Modifier.padding(vertical = 24.dp)
@@ -346,7 +335,7 @@ fun OrderDetails(
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
-                            text = farmerName,
+                            text = order.farmerName,
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface
@@ -414,7 +403,7 @@ fun OrderDetails(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                order.items.forEach {item ->
+                orderDetails?.forEach {item ->
                     Row(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier
@@ -423,19 +412,19 @@ fun OrderDetails(
                     ) {
                         Column {
                             Text(
-                                text = item.product.name,
+                                text = item.produceName ?: "Unknown",
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "${item.quantity} ${item.product.unit}",
+                                text = "${item.quantity} ${item.produceUnit}",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
                         }
                         Text(
-                            text = "UGX ${item.quantity * item.product.price}",
+                            text = "UGX ${item.producePrice?.times(item.quantity)}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
@@ -456,7 +445,7 @@ fun OrderDetails(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "UGX ${order.items.sumOf {it.quantity * it.product.price}}",
+                        text = "UGX ${orderDetails?.sumOf{ it.producePrice?.times(it.quantity) ?: 0.0 }}",
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.primary,
@@ -510,7 +499,7 @@ fun ProgressIndictor(
                     .weight(1f)
                     .background(
                         when (orderStatus) {
-                            OrderStatus.DELIVERED, OrderStatus.IN_TRANSIT, OrderStatus.PENDING -> {
+                            OrderStatus.delivered, OrderStatus.in_transit, OrderStatus.pending -> {
                                 MaterialTheme.colorScheme.primary
                             }
 
@@ -523,7 +512,7 @@ fun ProgressIndictor(
             Icon(
                 painter = painterResource(R.drawable.clock_waiting),
                 tint = when (orderStatus) {
-                    OrderStatus.DELIVERED, OrderStatus.IN_TRANSIT, OrderStatus.PENDING -> {
+                    OrderStatus.delivered, OrderStatus.in_transit, OrderStatus.pending -> {
                         MaterialTheme.colorScheme.onPrimary
                     }
                     else -> {
@@ -536,7 +525,7 @@ fun ProgressIndictor(
                     .clip(CircleShape)
                     .then(
                         when (orderStatus) {
-                            OrderStatus.DELIVERED, OrderStatus.IN_TRANSIT, OrderStatus.PENDING -> {
+                            OrderStatus.delivered, OrderStatus.in_transit, OrderStatus.pending -> {
                                 Modifier
                                     .background(MaterialTheme.colorScheme.primary)
                                     .padding(6.dp)
@@ -558,7 +547,7 @@ fun ProgressIndictor(
                     .weight(1f)
                     .background(
                         when (orderStatus) {
-                            OrderStatus.DELIVERED, OrderStatus.IN_TRANSIT -> {
+                            OrderStatus.delivered, OrderStatus.in_transit -> {
                                 MaterialTheme.colorScheme.primary
                             }
 
@@ -571,7 +560,7 @@ fun ProgressIndictor(
             Icon(
                 painter = painterResource(R.drawable.truck_icon),
                 tint = when (orderStatus) {
-                    OrderStatus.DELIVERED, OrderStatus.IN_TRANSIT -> {
+                    OrderStatus.delivered, OrderStatus.in_transit -> {
                         MaterialTheme.colorScheme.onPrimary
                     }
 
@@ -585,7 +574,7 @@ fun ProgressIndictor(
                     .clip(CircleShape)
                     .then(
                         when (orderStatus) {
-                            OrderStatus.DELIVERED, OrderStatus.IN_TRANSIT -> {
+                            OrderStatus.delivered, OrderStatus.in_transit -> {
                                 Modifier
                                     .background(MaterialTheme.colorScheme.primary)
                                     .padding(6.dp)
@@ -607,7 +596,7 @@ fun ProgressIndictor(
                     .weight(1f)
                     .background(
                         when (orderStatus) {
-                            OrderStatus.DELIVERED -> {
+                            OrderStatus.delivered -> {
                                 MaterialTheme.colorScheme.primary
                             }
 
@@ -620,7 +609,7 @@ fun ProgressIndictor(
             Icon(
                 painter = painterResource(R.drawable.circle_check),
                 tint = when (orderStatus) {
-                    OrderStatus.DELIVERED -> {
+                    OrderStatus.delivered -> {
                         MaterialTheme.colorScheme.onPrimary
                     }
 
@@ -634,7 +623,7 @@ fun ProgressIndictor(
                     .clip(CircleShape)
                     .then(
                         when (orderStatus) {
-                            OrderStatus.DELIVERED -> {
+                            OrderStatus.delivered -> {
                                 Modifier
                                     .background(MaterialTheme.colorScheme.primary)
                                     .padding(6.dp)
@@ -656,7 +645,7 @@ fun ProgressIndictor(
                     .weight(1f)
                     .background(
                         when (orderStatus) {
-                            OrderStatus.DELIVERED -> {
+                            OrderStatus.delivered -> {
                                 MaterialTheme.colorScheme.primary
                             }
 
@@ -671,9 +660,9 @@ fun ProgressIndictor(
             horizontalArrangement = Arrangement.SpaceEvenly,
             modifier = Modifier.fillMaxWidth()
         ){
-            Text(OrderStatus.PENDING.text)
-            Text(OrderStatus.IN_TRANSIT.text)
-            Text(OrderStatus.DELIVERED.text)
+            Text(OrderStatus.pending.text)
+            Text(OrderStatus.in_transit.text)
+            Text(OrderStatus.delivered.text)
         }
     }
 }
@@ -692,7 +681,7 @@ fun CancelledOrder(modifier: Modifier = Modifier){
                 .size(80.dp)
         )
         Text(
-            text = OrderStatus.CANCELLED.name,
+            text = OrderStatus.cancelled.name,
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.error
         )

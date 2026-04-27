@@ -3,15 +3,52 @@ package com.techproject.harvestlink.model
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
 
-@Serializable
 data class Order(
     val id: Int = 0,
-    @SerialName("order_date") val orderDate: Long = 0L,
-    @SerialName("order_status") val orderStatus: OrderStatus = OrderStatus.PENDING,
+    val orderDate: Long = 0L,
+    val orderStatus: OrderStatus = OrderStatus.pending,
+    val deliveryAddress: String = "",
+    val buyerId: String = "",
+    val farmerId: String = "",
+    val currency: String = "UGX",
+    val subtotal: Double = 0.0,
+    val deliveryFee: Double = 0.0,
+    val totalAmount: Double = 0.0,
+    val buyerName: String = "",
+    val buyerEmail: String = "",
+    val farmerName: String = "",
+    val farmerEmail: String = "",
+)
+
+@Serializable
+data class OrderItem(
+    val product: Produce = Produce(),
+    val quantity: Int = 0,
+
+)
+
+@Serializable
+data class OrderDetails(
+    @SerialName("order_id") val orderId: Int = 0,
+    @SerialName("status") val status: OrderStatus = OrderStatus.pending,
+    @SerialName("ordered_at") val orderedAt: Long = 0,
     @SerialName("delivery_address") val deliveryAddress: String = "",
-    @SerialName("user_id") val userId: String = "",
+    @SerialName("currency") val currency: String = "UGX",
+    @SerialName("subtotal") val subtotal: Double = 0.0,
+    @SerialName("delivery_fee") val deliveryFee: Double = 0.0,
+    @SerialName("total_amount") val totalAmount: Double = 0.0,
+    @SerialName("buyer_name") val buyerName: String = "",
+    @SerialName("buyer_id") val buyerId: String = "",
+    @SerialName("buyer_email") val buyerEmail: String = "",
+    @SerialName("farmer_name") val farmerName: String = "",
     @SerialName("farmer_id") val farmerId: String = "",
-    val items: List<OrderItem> = emptyList()
+    @SerialName("farmer_email") val farmerEmail: String = "",
+    @SerialName("item_id") val itemId: Int = 0,
+    @SerialName("quantity") val quantity: Double = 0.0,
+    @SerialName("produce_name") val produceName: String? = null,
+    @SerialName("produce_category") val produceCategory: String? = null,
+    @SerialName("produce_unit") val produceUnit: String? = null,
+    @SerialName("produce_price") val producePrice: Double? = null
 )
 
 @Serializable
@@ -38,17 +75,11 @@ data class FarmerOrderRequest(
 )
 
 @Serializable
-data class OrderItem(
-    val product: Produce = Produce(),
-    val quantity: Int = 0,
-)
-
-@Serializable
 enum class OrderStatus(val text: String) {
-    DELIVERED(text = "Delivered"),
-    IN_TRANSIT(text = "In Transit"),
-    PENDING(text = "Pending"),
-    CANCELLED(text = "Cancelled")
+    delivered(text = "Delivered"),
+    in_transit(text = "In Transit"),
+    pending(text = "Pending"),
+    cancelled(text = "Cancelled")
 }
 
 @Serializable

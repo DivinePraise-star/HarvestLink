@@ -94,7 +94,7 @@ class ChatDetailsViewModel(
                         }
                     )
                 }
-                Log.e("RaceParticipant", "Error sending message",e)
+                Log.e("ChatDetailsViewModel", "Error sending message",e)
             }
         }
     }

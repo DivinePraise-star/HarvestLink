@@ -1,5 +1,6 @@
 package com.techproject.harvestlink.ui.screens.order
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.techproject.harvestlink.data.MoreData
 import com.techproject.harvestlink.model.Order
@@ -7,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import androidx.lifecycle.viewModelScope
+import com.techproject.harvestlink.model.OrderStatus
 import kotlinx.coroutines.launch
 
 class OrderViewModel: ViewModel() {
@@ -14,7 +16,7 @@ class OrderViewModel: ViewModel() {
     val orderUiState: StateFlow<OrderUiState> = _orderUiState
 
     init {
-        loadOrders("buyer-001")
+        loadOrders("a752702b-bb48-4f46-b525-d8432bfd4520")
     }
 
     fun toggleOrderDetails() {
@@ -29,15 +31,32 @@ class OrderViewModel: ViewModel() {
     fun loadOrders(currentUserId: String) {
         viewModelScope.launch {
             try {
-                val data = MoreData.fetchOrders()
-                val filteredList = data.filter { it.userId == currentUserId }.sortedBy { it.orderDate }
+                val data = MoreData.fetchBuyerOrders(currentUserId)
+                val filteredList = data.groupBy {
+                    Order(
+                        id = it.orderId,
+                        orderDate = it.orderedAt,
+                        orderStatus = it.status,
+                        deliveryAddress = it.deliveryAddress,
+                        buyerId = it.buyerId,
+                        farmerId = it.farmerId,
+                        currency = it.currency,
+                        subtotal = it.subtotal,
+                        deliveryFee = it.deliveryFee,
+                        totalAmount = it.totalAmount,
+                        buyerName = it.buyerName,
+                        buyerEmail = it.buyerEmail,
+                        farmerName = it.farmerName,
+                        farmerEmail = it.farmerEmail,
+                    )
+                }
                 _orderUiState.update {
                     it.copy(
                         orders = filteredList
                     )
                 }
-            } catch (_: Exception) {
-                // Handle error state if needed
+            } catch (e: Exception) {
+                Log.e("ViewModel", "Failed to load orders", e)
             }
         }
     }

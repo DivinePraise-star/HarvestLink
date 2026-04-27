@@ -1,6 +1,7 @@
 package com.techproject.harvestlink.ui.screens.chat
 
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -17,19 +18,28 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,6 +49,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.techproject.harvestlink.R
 import com.techproject.harvestlink.data.MoreData
+import com.techproject.harvestlink.model.Farmer
 import com.techproject.harvestlink.ui.theme.HarvestLinkTheme
 import com.techproject.harvestlink.ui.ScreenHeader
 import com.techproject.harvestlink.ui.screens.AppDestinations
@@ -51,40 +62,135 @@ fun ChatList(
     navController: NavController,
     chatListViewModel: ChatListViewModel = viewModel(factory = ChatListViewModel.Factory)
 ) {
+    val chatListUiState = chatListViewModel.chatListUiState.collectAsState().value
+    val conversation = chatListUiState.conversations
 
-    val conversation = chatListViewModel.conversations.collectAsState().value
 
-//    val lastMessagesPerUser = userMessages.userMessages
-//            .asSequence()
-//            .filter {
-//                it.senderId == currentUserId || it.receiverId == currentUserId
-//            }
-//            .groupBy {
-//                if (it.senderId == currentUserId) it.receiverId else it.senderId
-//            }
-//            .mapValues { (_, messages) ->
-//                messages.maxByOrNull { it.timestamp }
-//            }
-//            .toMap()
+    if(!chatListUiState.isNewChat){
+        Box {
+            Column(modifier = Modifier.fillMaxSize()) {
+                ScreenHeader(
+                    title = stringResource(R.string.messagesScreenHeader),
+                    modifier = Modifier
+                        .padding(12.dp)
+                )
+                if (conversation.isEmpty()) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) { CircularProgressIndicator() }
+                } else {
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(conversation) { each ->
+                            ChatItem(
+                                id = each.conversationId,
+                                userName = each.userName,
+                                lastMessage = each.lastMessage,
+                                time = SimpleDateFormat(
+                                    "h:mm a",
+                                    Locale.getDefault()
+                                ).format(Date(each.lastMessageTimestamp)),
+                                unreadCount = each.unreadCount ?: 0,
+                                onClick = {
+                                    navController.navigate("${AppDestinations.MESSAGES.name}/${each.conversationId}/${each.userId}")
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+            IconButton(
+                onClick = { chatListViewModel.toggleNewChat() },
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(12.dp)
+                    .size(50.dp)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.plus),
+                    contentDescription = stringResource(R.string.new_chat),
+                    modifier = Modifier.padding(8.dp)
 
-    Column(modifier = Modifier.fillMaxSize()) {
+                )
+            }
+        }
+    }else{
+        NewChat(chatListViewModel,chatListUiState)
+    }
+}
+
+@Composable
+fun NewChat(
+    chatListViewModel: ChatListViewModel,
+    chatListUiState: ChatListUiState,
+    modifier: Modifier = Modifier
+) {
+    chatListViewModel.fetchFarmers()
+    val farmerList = chatListUiState.farmers
+    var searchText by remember { mutableStateOf("") }
+
+    Column(modifier = modifier.fillMaxSize()) {
+        BackHandler { chatListViewModel.toggleNewChat() }
         ScreenHeader(
-            title = stringResource(R.string.messagesScreenHeader),
+            title = stringResource(R.string.new_chat),
             modifier = Modifier
                 .padding(12.dp)
         )
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(conversation) { each ->
-                if (conversation.isNotEmpty()) {
-                    ChatItem(
-                        id = each.conversationId,
-                        userName = each.userName,
-                        lastMessage = each.lastMessage,
-                        time = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(each.lastMessageTimestamp)),
-                        unreadCount = each.unreadCount ?: 0,
-                        onClick = {
-                            navController.navigate("${AppDestinations.MESSAGES.name}/${each.conversationId}/${each.userId}")
+        if (farmerList.isEmpty()) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize()
+            ) { CircularProgressIndicator() }
+        } else {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                item {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    ) {
+                        IconButton(
+                            onClick = { chatListViewModel.toggleNewChat() },
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            ),
+                            modifier = Modifier
+                                .size(50.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.backbutton),
+                                contentDescription = stringResource(R.string.upButton),
+                                modifier = Modifier.padding(8.dp)
+                            )
                         }
+                        OutlinedTextField(
+                            value = searchText,
+                            onValueChange = { searchText = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .padding(4.dp),
+                            placeholder = { Text("Search for a farmer...") },
+                            shape = RoundedCornerShape(dimensionResource(R.dimen.chatBoxBoarderRadius)),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer
+                            )
+
+                        )
+                    }
+                }
+                items(farmerList) { each ->
+                    NewChatItem(
+                        id = each.id,
+                        userName = each.name,
+                        onClick = {}
                     )
                 }
             }
@@ -186,6 +292,47 @@ fun ChatItem(
     }
 }
 
+@Composable
+fun NewChatItem(
+    id: String,
+    userName: String?,
+    onClick: (String) -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        onClick = { onClick(id) },
+        shape = RoundedCornerShape(12.dp),
+        color = Color.Transparent
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .padding(12.dp)
+                .fillMaxWidth()
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.user_profile),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .padding(8.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = userName ?: "Unknown",
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
 
 
 @Preview(showBackground = true)

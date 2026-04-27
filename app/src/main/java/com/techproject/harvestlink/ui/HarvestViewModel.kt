@@ -9,7 +9,6 @@ import com.techproject.harvestlink.data.MoreData
 import com.techproject.harvestlink.model.Buyer
 import com.techproject.harvestlink.model.Farmer
 import com.techproject.harvestlink.model.Produce
-import com.techproject.harvestlink.model.User
 import com.techproject.harvestlink.model.OrderStatus
 import kotlinx.coroutines.launch
 
@@ -62,12 +61,8 @@ class HarvestViewModel : ViewModel() {
                 val buyers = MoreData.fetchBuyers()
                 if (buyers.isNotEmpty()) {
                     buyerProfile = buyers[0]
-                    val allOrders = MoreData.fetchOrders()
-                    activeOrdersCount = allOrders.count { 
-                        it.userId == buyerProfile?.id && 
-                        it.orderStatus != OrderStatus.DELIVERED && 
-                        it.orderStatus != OrderStatus.CANCELLED 
-                    }
+                    val allOrders = MoreData.fetchBuyerOrders("a752702b-bb48-4f46-b525-d8432bfd4520").groupBy { it.orderId }
+                    activeOrdersCount = allOrders.count() { it.value.any { order -> order.status != OrderStatus.cancelled } }
                 }
                 farmersList = MoreData.fetchFarmers()
             } catch (e: Exception) {

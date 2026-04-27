@@ -7,6 +7,8 @@ import com.techproject.harvestlink.model.FarmerListing
 import com.techproject.harvestlink.model.FarmerOrderRequest
 import com.techproject.harvestlink.model.Produce
 import com.techproject.harvestlink.model.Order
+import com.techproject.harvestlink.model.OrderDetails
+import com.techproject.harvestlink.model.OrderStatus
 import io.github.jan.supabase.postgrest.rpc
 
 object MoreData {
@@ -47,7 +49,9 @@ object MoreData {
         return SupabaseClient.client.postgrest["farmer_order_requests"].select().decodeList<FarmerOrderRequest>()
     }
 
-    suspend fun fetchOrders(): List<Order> {
-        return SupabaseClient.client.postgrest["orders"].select().decodeList<Order>()
+    suspend fun fetchBuyerOrders(userId: String): List<OrderDetails> {
+        return SupabaseClient.client.postgrest["order_details"].select{
+            filter { eq("buyer_id", userId) }
+        }.decodeList<OrderDetails>()
     }
 }

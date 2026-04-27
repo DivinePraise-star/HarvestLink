@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -104,44 +105,52 @@ fun ChatDetails(
         )}
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        ChatTopBar(
-            user = messageUi,
-            onClick = onClick
-        )
-        Box(modifier = Modifier
-            .weight(1f)
-            .fillMaxWidth()) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
-                reverseLayout = true
-            ) {
-                groupedMessages.forEach { (date,messagesInDate) ->
-                    items(messagesInDate) { message  ->
-                        MessageBubble(
-                            message = message,
-                            isMe = message.senderId == currentUserId
-                        )
-                    }
-                    item {
-                        DateHeader(date)
+    if(groupedMessages.isEmpty()){
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.fillMaxSize()
+        ) { CircularProgressIndicator() }
+    }else{
+        Column(modifier = Modifier.fillMaxSize()) {
+            ChatTopBar(
+                user = messageUi,
+                onClick = onClick
+            )
+            Box(modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                    reverseLayout = true
+                ) {
+                    groupedMessages.forEach { (date,messagesInDate) ->
+                        items(messagesInDate) { message  ->
+                            MessageBubble(
+                                message = message,
+                                isMe = message.senderId == currentUserId
+                            )
+                        }
+                        item {
+                            DateHeader(date)
+                        }
                     }
                 }
             }
-        }
 
-        ChatTextArea(
-            onPickImage = { imageLauncher.launch("image/*") },
-            onPickVideo = { videoLauncher.launch("video/*") },
-            onPickFile = { fileLauncher.launch(arrayOf("*/*")) },
-            onSendMessage = { textMessage ->
-                chatDetailsViewModel.sendMessage(
-                    text = textMessage,
-                )
-            })
+            ChatTextArea(
+                onPickImage = { imageLauncher.launch("image/*") },
+                onPickVideo = { videoLauncher.launch("video/*") },
+                onPickFile = { fileLauncher.launch(arrayOf("*/*")) },
+                onSendMessage = { textMessage ->
+                    chatDetailsViewModel.sendMessage(
+                        text = textMessage,
+                    )
+                })
+        }
     }
+
 }
 
 /**
