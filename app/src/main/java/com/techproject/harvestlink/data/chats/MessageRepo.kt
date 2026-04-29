@@ -29,7 +29,7 @@ class MessageRepo(): ChatRepository {
             }.decodeList<Message>()
     }
 
-    override suspend fun getConversation(userId: String): List<ConversationDetails> {
+    override suspend fun getConversations(userId: String): List<ConversationDetails> {
         val conversation = client.postgrest.from("user_chat_list")
             .select {
                 filter {
@@ -48,6 +48,16 @@ class MessageRepo(): ChatRepository {
                 unreadCount = it.unreadCount
             )
         }
+    }
+
+    override suspend fun getOrCreateConversation(userId: String, user2Id: String): String{
+        val payload = buildJsonObject {
+            put("user_id_1", userId)
+            put("user_id_2", user2Id)
+        }
+        val result = client.postgrest.rpc("get_or_create_direct_conversation",payload)
+
+        return result.decodeAs<String>()
     }
 
     override suspend fun insertMessage(message: Message): String {

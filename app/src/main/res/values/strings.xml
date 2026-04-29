@@ -5,4 +5,12 @@
     <string name="messagesScreenHeader">Messages</string>
     <string name="orderScreenHeader">Track Order</string>
     <string name="new_chat">New Chat</string>
+    <string name="place_order">Place Order</string>
+    <string name="special_instructions_placeholder">E.g., leave at gate, call on arrival</string>
+    <string name="special_instructions">Special Instructions (Optional)</string>
+    <string name="delivery_address">Delivery Address</string>
+    <string name="delivery_address_placeholder">Enter your full address</string>
+    <string name="total">Total</string>
+    <string name="subtotal">Subtotal</string>
+    <string name="delivery_fee">Delivery fee</string>
 </resources>

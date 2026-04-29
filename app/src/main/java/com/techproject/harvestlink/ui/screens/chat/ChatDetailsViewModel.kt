@@ -25,7 +25,7 @@ class ChatDetailsViewModel(
     savedStateHandle: SavedStateHandle
 ): ViewModel() {
 
-    val currentUserId = "3230676f-fc7c-4ca2-a538-8cf168442831"
+    val currentUserId = "38c44748-e0b1-4da7-9d9c-cd392c2c495e"
     val recipientId: String = checkNotNull(savedStateHandle["recipientId"])
     val conversationId: String = checkNotNull(savedStateHandle["conversationId"])
 

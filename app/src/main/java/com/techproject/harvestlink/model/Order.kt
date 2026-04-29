@@ -20,7 +20,6 @@ data class Order(
     val farmerEmail: String = "",
 )
 
-@Serializable
 data class OrderItem(
     val product: Produce = Produce(),
     val quantity: Int = 0,

@@ -1,5 +1,6 @@
 package com.techproject.harvestlink.data
 
+import com.techproject.harvestlink.data.SupabaseService.client
 import com.techproject.harvestlink.model.Buyer
 import com.techproject.harvestlink.model.Farmer
 import io.github.jan.supabase.postgrest.postgrest
@@ -8,8 +9,12 @@ import com.techproject.harvestlink.model.FarmerOrderRequest
 import com.techproject.harvestlink.model.Produce
 import com.techproject.harvestlink.model.Order
 import com.techproject.harvestlink.model.OrderDetails
-import com.techproject.harvestlink.model.OrderStatus
+import com.techproject.harvestlink.model.OrderItem
 import io.github.jan.supabase.postgrest.rpc
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.addJsonObject
 
 object MoreData {
 
@@ -38,7 +43,7 @@ object MoreData {
     }
 
     suspend fun fetchProduce(): List<Produce> {
-        return SupabaseClient.client.postgrest["produce"].select().decodeList<Produce>()
+        return SupabaseClient.client.postgrest["produce_details"].select().decodeList<Produce>()
     }
 
     suspend fun fetchFarmerListings(): List<FarmerListing> {
@@ -53,5 +58,27 @@ object MoreData {
         return SupabaseClient.client.postgrest["order_details"].select{
             filter { eq("buyer_id", userId) }
         }.decodeList<OrderDetails>()
+    }
+
+    suspend fun placeOrder(order: Order,orderItems: List<OrderItem>): Long{
+        val payload = buildJsonObject {
+            put("p_buyer_id", order.buyerId)
+            put("p_farmer_id", order.farmerId)
+            put("p_currency", order.currency)
+            put("p_subtotal", order.subtotal)
+            put("p_delivery_fee", order.deliveryFee)
+            put("p_total_amount", order.totalAmount)
+            putJsonArray("p_items") {
+                orderItems.forEach { item ->
+                    addJsonObject {
+                        put("produce_id", item.product.id)
+                        put("quantity", item.quantity.toDouble())
+                    }
+                }
+            }
+        }
+        val result = client.postgrest.rpc("create_order",payload)
+
+        return result.decodeAs<Long>()
     }
 }

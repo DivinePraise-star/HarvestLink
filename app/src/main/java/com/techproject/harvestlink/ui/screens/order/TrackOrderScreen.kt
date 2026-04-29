@@ -147,76 +147,77 @@ fun OrderListItem(
             }
 
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ){
-            Column {
+        Column {
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column {
+                    Text(
+                        text = "HL-2026-${item.id}",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = timeString,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
                 Text(
-                    text = "HL-2026-${item.id}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = timeString,
+                    text = item.orderStatus.text,
+                    fontWeight = FontWeight.Bold,
+                    color = when(item.orderStatus.text){
+                        OrderStatus.delivered.text ->{
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        }
+                        OrderStatus.in_transit.text ->{
+                            if(isSystemInDarkTheme()) Color(0xFFDBEAFE) else Color(0xFF193CB8)
+                        }
+                        OrderStatus.pending.text ->{
+                            if(isSystemInDarkTheme()) Color(0xFFFEF9C2) else Color(0xFF894B00)
+                        }
+                        else ->{
+                            MaterialTheme.colorScheme.onErrorContainer
+                        }
+                    },
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Column(
                     modifier = Modifier
-                        .padding(top = 8.dp)
-                ){
-                    items.forEach { item ->
-                        Text(
-                            text = "${item.produceName} (${item.quantity} ${item.produceUnit})",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
+                        .clip(RoundedCornerShape(50))
+                        .background(
+                            color = when (item.orderStatus.text) {
+                                OrderStatus.delivered.text -> {
+                                    MaterialTheme.colorScheme.primaryContainer
+                                }
+
+                                OrderStatus.in_transit.text -> {
+                                    if (isSystemInDarkTheme()) Color(0xFF193CB8) else Color(0xFFDBEAFE)
+                                }
+
+                                OrderStatus.pending.text -> {
+                                    if (isSystemInDarkTheme()) Color(0xFF894B00) else Color(0xFFFEF9C2)
+                                }
+
+                                else -> {
+                                    MaterialTheme.colorScheme.errorContainer
+                                }
+                            }
                         )
-                    }
+                        .padding(8.dp)
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .padding(top = 8.dp)
+            ){
+                items.forEach { item ->
+                    Text(
+                        text = "${item.produceName} (${item.quantity} ${item.produceUnit})",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
             }
-
-            Text(
-                text = item.orderStatus.text,
-                fontWeight = FontWeight.Bold,
-                color = when(item.orderStatus.text){
-                    OrderStatus.delivered.text ->{
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    }
-                    OrderStatus.in_transit.text ->{
-                        if(isSystemInDarkTheme()) Color(0xFFDBEAFE) else Color(0xFF193CB8)
-                    }
-                    OrderStatus.pending.text ->{
-                        if(isSystemInDarkTheme()) Color(0xFFFEF9C2) else Color(0xFF894B00)
-                    }
-                    else ->{
-                        MaterialTheme.colorScheme.onErrorContainer
-                    }
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50))
-                    .background(
-                        color = when (item.orderStatus.text) {
-                            OrderStatus.delivered.text -> {
-                                MaterialTheme.colorScheme.primaryContainer
-                            }
-
-                            OrderStatus.in_transit.text -> {
-                                if (isSystemInDarkTheme()) Color(0xFF193CB8) else Color(0xFFDBEAFE)
-                            }
-
-                            OrderStatus.pending.text -> {
-                                if (isSystemInDarkTheme()) Color(0xFF894B00) else Color(0xFFFEF9C2)
-                            }
-
-                            else -> {
-                                MaterialTheme.colorScheme.errorContainer
-                            }
-                        }
-                    )
-                    .padding(8.dp)
-            )
         }
         HorizontalDivider(
             color = MaterialTheme.colorScheme.outline,
@@ -692,6 +693,6 @@ fun CancelledOrder(modifier: Modifier = Modifier){
 @Composable
 fun TrackOrderScreenPreview(){
     HarvestLinkTheme(darkTheme = false) {
-        TrackOrderScreen()
+        //TrackOrderScreen()
     }
 }

@@ -4,15 +4,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.techproject.harvestlink.HarvestLinkApplication
 import com.techproject.harvestlink.data.MoreData
+import com.techproject.harvestlink.data.chats.ChatRepository
 import com.techproject.harvestlink.model.Buyer
 import com.techproject.harvestlink.model.Farmer
 import com.techproject.harvestlink.model.Produce
 import com.techproject.harvestlink.model.OrderStatus
 import kotlinx.coroutines.launch
 
-class HarvestViewModel : ViewModel() {
+class HarvestViewModel(val chatRepository: ChatRepository) : ViewModel() {
     var filterUiState by mutableStateOf(FilterUiState())
         private set
 
@@ -175,6 +181,20 @@ class HarvestViewModel : ViewModel() {
     fun toggleNavBar() {
         homeUiState = homeUiState.copy(showNavBar = !homeUiState.showNavBar)
     }
+
+    suspend fun getOrCreateConversation(userId: String): String{
+        return chatRepository.getOrCreateConversation(buyerProfile.id,userId)
+    }
+
+    companion object{
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val app = (this[APPLICATION_KEY] as HarvestLinkApplication)
+                val chatRepo = app.container.repository
+                HarvestViewModel(chatRepo)
+            }
+        }
+    }
 }
 
 
@@ -184,7 +204,7 @@ data class FilterUiState(
 )
 
 data class HomeUiState(
-    val currentProduce: Produce? = null,
+    val currentProduce: Produce = Produce(),
     val beginner: Boolean = true,
     val isFarmer:Boolean = false,
     val showNavBar: Boolean = true,

@@ -53,6 +53,7 @@ data class Farmer(
 data class Produce(
     val id: String = "",
     val name: String = "",
+    @SerialName("farmer_name") val farmerName: String = "",
     val price: Double = 0.0,
     val unit: String = "",
     @SerialName("available_quantity") val availableQuantity: Double = 0.0,
@@ -60,6 +61,6 @@ data class Produce(
     val description: String = "",
     @SerialName("harvest_date") val harvestDate: String = "",
     @SerialName("farmer_id") val farmerId: String = "",
-    val imageUrl: String? = null,
+    @SerialName("image_url")val imageUrl: String? = null,
     val category: String = ""
 )

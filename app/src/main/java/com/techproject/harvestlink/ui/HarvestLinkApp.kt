@@ -12,6 +12,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -34,12 +35,15 @@ import com.techproject.harvestlink.ui.screens.home.BrowseScreen
 import com.techproject.harvestlink.ui.screens.home.FilterScreen
 import com.techproject.harvestlink.ui.screens.home.HomeScreen
 import com.techproject.harvestlink.ui.screens.home.ProduceDetailScreen
+import com.techproject.harvestlink.ui.screens.order.OrderViewModel
+import com.techproject.harvestlink.ui.screens.order.PlaceOrderScreen
 import com.techproject.harvestlink.ui.screens.order.TrackOrderScreen
+import kotlinx.coroutines.launch
 
 @Composable
 fun HarvestLinkApp() {
     val navController = rememberNavController()
-    val harvestViewModel: HarvestViewModel = viewModel()
+    val harvestViewModel: HarvestViewModel = viewModel(factory = HarvestViewModel.Factory)
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -72,6 +76,8 @@ fun MainScreen(
     harvestViewModel: HarvestViewModel,
     modifier: Modifier = Modifier
 ){
+    val scope = rememberCoroutineScope()
+
     NavHost(
         navController = navController,
         startDestination = AppDestinations.HOME.name,
@@ -155,7 +161,16 @@ fun MainScreen(
             if (produce != null) {
                 ProduceDetailScreen(
                     produce = produce,
-                    onBackClick = { navController.popBackStack() }
+                    onBackClick = { navController.popBackStack() },
+                    onMessage = {
+                        scope.launch {
+                            val conversationId = harvestViewModel.getOrCreateConversation(produce.farmerId)
+                            navController.navigate("${AppDestinations.MESSAGES.name}/$conversationId/${produce.farmerId}")
+                        }
+                    },
+                    onRequest = {
+                        navController.navigate("PlaceOrderScreen/${produce.farmerId}")
+                    }
                 )
             } else {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -171,6 +186,18 @@ fun MainScreen(
                     navController.popBackStack()
                     harvestViewModel.toggleNavBar()
                 })
+        }
+        composable(route = "PlaceOrderScreen/{farmerId}"){
+            val farmerId = it.arguments?.getString("farmerId")
+            PlaceOrderScreen(
+                harvestViewModel,
+                farmerId = farmerId,
+                onSuccess = {value ->
+                    if(value > 0){
+                        navController.navigate(AppDestinations.HOME.name)
+                    }
+                }
+            )
         }
     }
 }
