@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import androidx.lifecycle.viewModelScope
+import com.techproject.harvestlink.model.OrderItem
 import com.techproject.harvestlink.model.OrderStatus
 import kotlinx.coroutines.launch
 
@@ -16,7 +17,7 @@ class OrderViewModel: ViewModel() {
     val orderUiState: StateFlow<OrderUiState> = _orderUiState
 
     init {
-        loadOrders("a752702b-bb48-4f46-b525-d8432bfd4520")
+        loadOrders("38c44748-e0b1-4da7-9d9c-cd392c2c495e")
     }
 
     fun toggleOrderDetails() {
@@ -68,6 +69,13 @@ class OrderViewModel: ViewModel() {
                 showOrderDetails = !showOrderDetailsValue,
                 selectedOrder = selectedOrder
             )
+        }
+    }
+
+    fun placeOrder(order:Order, orderItems: List<OrderItem>,onSuccess:(Long)-> Unit){
+        viewModelScope.launch {
+            val result = MoreData.placeOrder(order, orderItems)
+            onSuccess(result)
         }
     }
 }

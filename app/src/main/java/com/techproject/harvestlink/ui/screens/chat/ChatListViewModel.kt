@@ -18,14 +18,14 @@ import kotlinx.coroutines.launch
 
 class ChatListViewModel(val messageRepo: ChatRepository): ViewModel() {
 
-    val currentUser:String = "3230676f-fc7c-4ca2-a538-8cf168442831"
+    val currentUser:String = "38c44748-e0b1-4da7-9d9c-cd392c2c495e"
 
     private val _chatListUiState = MutableStateFlow(ChatListUiState())
     val chatListUiState: StateFlow<ChatListUiState> = _chatListUiState
 
     init {
         viewModelScope.launch {
-            val conversations = messageRepo.getConversation(currentUser)
+            val conversations = messageRepo.getConversations(currentUser)
             _chatListUiState.update {
                 it.copy(
                     conversations = conversations
