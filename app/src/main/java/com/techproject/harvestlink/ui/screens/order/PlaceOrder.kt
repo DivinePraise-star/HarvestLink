@@ -1,6 +1,7 @@
 package com.techproject.harvestlink.ui.screens.order
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,20 +19,25 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -52,19 +58,18 @@ import coil.request.ImageRequest
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.techproject.harvestlink.R
+import com.techproject.harvestlink.data.MoreData
 import com.techproject.harvestlink.model.Order
 import com.techproject.harvestlink.model.OrderItem
 import com.techproject.harvestlink.model.Produce
 import com.techproject.harvestlink.ui.HarvestViewModel
 import com.techproject.harvestlink.ui.ScreenHeader
-import com.techproject.harvestlink.ui.theme.HarvestLinkTheme
 import java.util.Locale
 
 @Composable
 fun PlaceOrderScreen(
     harvestViewModel: HarvestViewModel,
     farmerId: String?,
-    onAddProduct: () -> Unit = {},
     onSuccess: (Long) -> Unit,
 ) {
     val orderViewModel: OrderViewModel = viewModel()
@@ -78,6 +83,7 @@ fun PlaceOrderScreen(
         }
     }
 
+    var showAddProductSheet by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var address by remember { mutableStateOf(harvestViewModel.buyerProfile.deliveryAddress) }
     var instructions by remember { mutableStateOf("") }
@@ -88,127 +94,135 @@ fun PlaceOrderScreen(
     val isOrderValid = address?.isNotBlank() == true && orderItems.isNotEmpty()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            ScreenHeader(
-                title = stringResource(R.string.place_order),
-                modifier = Modifier.padding(12.dp)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Column(modifier = Modifier.padding(horizontal = 18.dp)) {
-                LazyColumn {
-                    items(orderItems, key = { it.product.id }) { orderItem ->
-                        ProduceCard(
-                            produce = orderItem.product,
-                            quantity = orderItem.quantity,
-                            onQuantityChange = { newQuantity ->
-                                updateQuantity(orderItem.product.id, newQuantity)
-                            }
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
+        LazyColumn(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            item {
+                ScreenHeader(
+                    title = stringResource(R.string.place_order),
+                    modifier = Modifier.padding(12.dp)
+                )
+            }
+            item {
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+            items(orderItems, key = { it.product.id }) { orderItem ->
+                ProduceCard(
+                    produce = orderItem.product,
+                    quantity = orderItem.quantity,
+                    onQuantityChange = { newQuantity ->
+                        updateQuantity(orderItem.product.id, newQuantity)
                     }
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Button(
-                        onClick = onAddProduct,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFE8F5E9),
-                            contentColor = Color(0xFF1B3D2F)
-                        ),
-                        modifier = Modifier
-                            .height(48.dp)
-                            .fillMaxWidth(),
-                        elevation = ButtonDefaults.buttonElevation(0.dp)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+            item {
+                Column(modifier = Modifier.padding(horizontal = 18.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
+                        Button(
+                            onClick = {
+                                showAddProductSheet = true
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFE8F5E9),
+                                contentColor = Color(0xFF1B3D2F)
+                            ),
+                            modifier = Modifier
+                                .height(48.dp)
+                                .fillMaxWidth(),
+                            elevation = ButtonDefaults.buttonElevation(0.dp)
                         ) {
-                            Icon(Icons.Default.Add, null, Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Add Another Product", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Row(
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Add, null, Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.add_another_product), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                    elevation = CardDefaults.cardElevation(0.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        // Subtotal row
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(stringResource(R.string.subtotal), color = MaterialTheme.colorScheme.onPrimaryContainer, fontSize = 14.sp)
-                            Text("UGX ${String.format(Locale.US, "%,d", subtotal.toInt())}", fontWeight = FontWeight.Medium, fontSize = 14.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(stringResource(R.string.delivery_fee), color = MaterialTheme.colorScheme.onPrimaryContainer, fontSize = 14.sp)
-                            Text("UGX ${String.format(Locale.US, "%,d", deliveryFee.toInt())}", fontWeight = FontWeight.Medium, fontSize = 14.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Divider(color = MaterialTheme.colorScheme.outline, thickness = 1.dp)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(stringResource(R.string.total), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                            Text("UGX ${String.format(Locale.US, "%,d", grandTotal.toInt())}", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                        elevation = CardDefaults.cardElevation(0.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            // Subtotal row
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(stringResource(R.string.subtotal), color = MaterialTheme.colorScheme.onPrimaryContainer, fontSize = 14.sp)
+                                Text("UGX ${String.format(Locale.US, "%,d", subtotal.toInt())}", fontWeight = FontWeight.Medium, fontSize = 14.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(stringResource(R.string.delivery_fee), color = MaterialTheme.colorScheme.onPrimaryContainer, fontSize = 14.sp)
+                                Text("UGX ${String.format(Locale.US, "%,d", deliveryFee.toInt())}", fontWeight = FontWeight.Medium, fontSize = 14.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Divider(color = MaterialTheme.colorScheme.outline, thickness = 1.dp)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(stringResource(R.string.total), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                Text("UGX ${String.format(Locale.US, "%,d", grandTotal.toInt())}", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            }
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Text(stringResource(R.string.delivery_address), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF1B3D2F))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = address ?: "",
+                        onValueChange = { address = it },
+                        placeholder = { Text(stringResource(R.string.delivery_address_placeholder)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF1B3D2F),
+                            unfocusedBorderColor = Color.Gray
+                        ),
+                        singleLine = false,
+                        minLines = 2
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Text(stringResource(R.string.special_instructions), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF1B3D2F))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = instructions,
+                        onValueChange = { instructions = it },
+                        placeholder = { Text(stringResource(R.string.special_instructions_placeholder)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF1B3D2F),
+                            unfocusedBorderColor = Color.Gray
+                        ),
+                        singleLine = false,
+                        minLines = 3
+                    )
+
+                    Spacer(modifier = Modifier.height(100.dp))
                 }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(stringResource(R.string.delivery_address), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF1B3D2F))
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = address ?: "",
-                    onValueChange = { address = it },
-                    placeholder = { Text(stringResource(R.string.delivery_address_placeholder)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF1B3D2F),
-                        unfocusedBorderColor = Color.Gray
-                    ),
-                    singleLine = false,
-                    minLines = 2
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(stringResource(R.string.special_instructions), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF1B3D2F))
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = instructions,
-                    onValueChange = { instructions = it },
-                    placeholder = { Text(stringResource(R.string.special_instructions_placeholder)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF1B3D2F),
-                        unfocusedBorderColor = Color.Gray
-                    ),
-                    singleLine = false,
-                    minLines = 3
-                )
-
-                Spacer(modifier = Modifier.height(100.dp))
             }
         }
 
@@ -249,6 +263,20 @@ fun PlaceOrderScreen(
                 )
             }
         }
+        if (showAddProductSheet) {
+            AddProductBottomSheet(
+                farmerId = farmerId ?: "",
+                onDismiss = { showAddProductSheet = false },
+                onAdd = { selectedProducts ->
+                    selectedProducts.forEach { product ->
+                        if (orderItems.none { it.product.id == product.id }) {
+                            orderItems.add(OrderItem(product, 1))
+                        }
+                    }
+                    showAddProductSheet = false
+                }
+            )
+        }
     }
 }
 
@@ -260,7 +288,7 @@ fun ProduceCard(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp)
     ) {
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
@@ -311,6 +339,152 @@ fun ProduceCard(
 @Composable
 fun Divider(color: Color, thickness: androidx.compose.ui.unit.Dp) {
     HorizontalDivider(color = color, thickness = thickness)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddProductBottomSheet(
+    farmerId: String,
+    onDismiss: () -> Unit,
+    onAdd: (List<Produce>) -> Unit
+) {
+    var isLoading by remember { mutableStateOf(true) }
+    var products by remember { mutableStateOf<List<Produce>>(emptyList()) }
+    var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+
+    LaunchedEffect(Unit) {
+        products = MoreData.fetchFarmerProduce(farmerId)
+        isLoading = false
+    }
+
+    fun toggleSelection(productId: String) {
+        selectedIds = if (selectedIds.contains(productId)) {
+            selectedIds - productId
+        } else {
+            selectedIds + productId
+        }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel", color = Color.Gray, fontWeight = FontWeight.Medium)
+                }
+                Text(
+                    text = "Add Products",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = Color(0xFF1B3D2F)
+                )
+                Button(
+                    onClick = {
+                        val selectedProducts = products.filter { selectedIds.contains(it.id) }
+                        onAdd(selectedProducts)
+                    },
+                    enabled = selectedIds.isNotEmpty(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF1B3D2F),
+                        disabledContainerColor = Color.LightGray
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Add (${selectedIds.size})")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if(isLoading){
+                CircularProgressIndicator()
+            }else{
+                LazyColumn {
+                    items(products) { product ->
+                        ProductSelectionItem(
+                            produce = product,
+                            isSelected = selectedIds.contains(product.id),
+                            onToggle = { toggleSelection(product.id) }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+fun ProductSelectionItem(
+    produce: Produce,
+    isSelected: Boolean,
+    onToggle: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .background(Color(0xFFFBF8F3))
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(produce.imageUrl)
+                .crossfade(true)
+                .build(),
+            contentDescription = null,
+            modifier = Modifier
+                .size(60.dp)
+                .clip(MaterialTheme.shapes.medium),
+            error = painterResource(R.drawable.placeholder)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+
+        // Product details
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = produce.name,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = Color(0xFF1B3D2F)
+            )
+            Text(
+                text = "UGX ${String.format(Locale.US, "%,d", produce.price.toInt())} per ${produce.unit}",
+                fontSize = 12.sp,
+                color = Color.Gray
+            )
+            Text(
+                text = "${produce.availableQuantity.toInt()} ${produce.unit} available",
+                fontSize = 11.sp,
+                color = Color.Gray
+            )
+        }
+        IconButton(onClick = onToggle) {
+            if (isSelected) {
+                Icon(Icons.Default.Check, contentDescription = "Selected", tint = Color(0xFF1B3D2F))
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .border(2.dp, Color.Gray, CircleShape)
+                )
+            }
+        }
+    }
 }
 
 @Preview(showBackground = true)
