@@ -69,7 +69,7 @@ fun PlaceOrderScreen(
 ) {
     val orderViewModel: OrderViewModel = viewModel()
     val homeUiState = harvestViewModel.homeUiState
-    val orderItems = remember { mutableStateListOf<OrderItem>().apply { addAll(listOf(OrderItem(homeUiState.currentProduce,1))) } }
+    val orderItems = remember { mutableStateListOf<OrderItem>().apply { addAll(listOf(OrderItem(homeUiState.currentProduce ?: Produce(), 1))) } }
 
     fun updateQuantity(produceId: String, newQuantity: Int) {
         val index = orderItems.indexOfFirst {it.product.id == produceId }

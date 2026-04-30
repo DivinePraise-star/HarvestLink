@@ -3,6 +3,7 @@ package com.techproject.harvestlink.model
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
 
+@Serializable
 data class Order(
     val id: Int = 0,
     val orderDate: Long = 0L,
@@ -20,11 +21,31 @@ data class Order(
     val farmerEmail: String = "",
 )
 
+@Serializable
 data class OrderItem(
     val product: Produce = Produce(),
     val quantity: Int = 0,
 
 )
+
+@Serializable
+data class OrderInsert(
+    @SerialName("order_date") val orderDate: Long,
+    @SerialName("order_status") val orderStatus: String,
+    @SerialName("delivery_address") val deliveryAddress: String,
+    @SerialName("user_id") val userId: String,
+    @SerialName("farmer_id") val farmerId: String
+)
+
+@Serializable
+data class OrderItemInsert(
+    @SerialName("order_id") val orderId: Int,
+    @SerialName("produce_id") val produceId: String,
+    @SerialName("quantity") val quantity: Int
+)
+
+@Serializable
+data class OrderIdResponse(val id: Int)
 
 @Serializable
 data class OrderDetails(

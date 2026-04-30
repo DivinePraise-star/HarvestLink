@@ -6,6 +6,11 @@ import com.techproject.harvestlink.model.FarmerListing
 import com.techproject.harvestlink.model.FarmerOrderRequest
 import com.techproject.harvestlink.model.Produce
 import com.techproject.harvestlink.model.OrderDetails
+import com.techproject.harvestlink.model.Order
+import com.techproject.harvestlink.model.OrderIdResponse
+import com.techproject.harvestlink.model.OrderItem
+import com.techproject.harvestlink.model.OrderInsert
+import com.techproject.harvestlink.model.OrderItemInsert
 import io.github.jan.supabase.postgrest.from
 
 object MoreData {
@@ -64,5 +69,33 @@ object MoreData {
 
     suspend fun createOrderRequest(request: FarmerOrderRequest) {
         SupabaseService.client.from("farmer_order_requests").insert(request)
+    }
+
+    suspend fun placeOrder(order: Order, orderItems: List<OrderItem>): Long {
+        val orderInsert = OrderInsert(
+            orderDate = System.currentTimeMillis(),
+            orderStatus = order.orderStatus.name.uppercase(),
+            deliveryAddress = order.deliveryAddress,
+            userId = order.buyerId,
+            farmerId = order.farmerId,
+        )
+
+        val response = SupabaseService.client.from("orders").insert(orderInsert) {
+            select()
+        }.decodeSingle<OrderIdResponse>()
+
+        val orderId = response.id
+
+        val itemsToInsert = orderItems.map {
+            OrderItemInsert(
+                orderId = orderId,
+                produceId = it.product.id,
+                quantity = it.quantity
+            )
+        }
+
+        SupabaseService.client.from("order_items").insert(itemsToInsert)
+
+        return orderId.toLong()
     }
 }
