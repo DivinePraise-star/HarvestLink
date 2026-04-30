@@ -52,7 +52,7 @@ object MoreData {
     }
 
     suspend fun fetchFarmerProduce(farmerId: String): List<Produce>{
-        return SupabaseClient.client.postgrest.from("produce_details")
+        return SupabaseService.client.from("produce_details")
             .select {
                 filter {
                     eq("farmer_id", farmerId)
