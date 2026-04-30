@@ -51,6 +51,15 @@ object MoreData {
         return SupabaseService.client.from("produce").select().decodeList<Produce>()
     }
 
+    suspend fun fetchFarmerProduce(farmerId: String): List<Produce>{
+        return SupabaseClient.client.postgrest.from("produce_details")
+            .select {
+                filter {
+                    eq("farmer_id", farmerId)
+                }
+            }.decodeList<Produce>()
+    }
+
     suspend fun fetchFarmerListings(): List<FarmerListing> {
         return SupabaseService.client.from("farmer_listings").select().decodeList<FarmerListing>()
     }
