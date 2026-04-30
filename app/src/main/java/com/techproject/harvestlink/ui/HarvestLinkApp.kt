@@ -31,8 +31,11 @@ import com.techproject.harvestlink.ui.screens.chat.ChatList
 import com.techproject.harvestlink.ui.screens.farmer.FarmerDashboardScreen
 import com.techproject.harvestlink.ui.screens.farmer.FarmerOrderRequestScreen
 import com.techproject.harvestlink.ui.screens.home.BrowseScreen
+import com.techproject.harvestlink.ui.screens.home.FarmerProfileScreen
 import com.techproject.harvestlink.ui.screens.home.FilterScreen
 import com.techproject.harvestlink.ui.screens.home.HomeScreen
+import com.techproject.harvestlink.ui.screens.home.NotificationScreen
+import com.techproject.harvestlink.ui.screens.home.OrderRequestScreen
 import com.techproject.harvestlink.ui.screens.home.ProduceDetailScreen
 import com.techproject.harvestlink.ui.screens.order.TrackOrderScreen
 
@@ -95,6 +98,7 @@ fun MainScreen(
                     onFilterClick = {navController.navigate("FilterScreen")},
                     onNavigateToOrders = { navController.navigate(AppDestinations.ORDERS.name) },
                     onNavigateToMessages = { navController.navigate(AppDestinations.MESSAGES.name) },
+                    onNavigateToNotifications = { navController.navigate("NotificationScreen") },
                     onSeeAllClick = { navController.navigate(AppDestinations.BROWSE.name) }
                 )
             }
@@ -120,7 +124,20 @@ fun MainScreen(
                         harvestViewModel.toggleNavBar()
                     }
                 )
-            }else{ TrackOrderScreen() }
+            }else{ 
+                TrackOrderScreen(
+                    onContactFarmer = { 
+                        navController.navigate(AppDestinations.MESSAGES.name)
+                    },
+                    onReorder = { produceName ->
+                        val produce = harvestViewModel.produceList.find { it.name == produceName }
+                        if (produce != null) {
+                            harvestViewModel.updateCurrentProduce(produce)
+                            navController.navigate("OrderRequestScreen")
+                        }
+                    }
+                ) 
+            }
         }
         composable(route = AppDestinations.MESSAGES.name){
             ChatList(navController)
@@ -155,13 +172,54 @@ fun MainScreen(
             if (produce != null) {
                 ProduceDetailScreen(
                     produce = produce,
-                    onBackClick = { navController.popBackStack() }
+                    onBackClick = { navController.popBackStack() },
+                    onViewProfileClick = { farmerId ->
+                        val farmer = harvestViewModel.farmersList.find { it.id == farmerId }
+                        if (farmer != null) {
+                            harvestViewModel.updateCurrentFarmer(farmer)
+                            navController.navigate("FarmerProfileScreen")
+                        }
+                    },
+                    onRequestOrderClick = { produceToOrder ->
+                        harvestViewModel.updateCurrentProduce(produceToOrder)
+                        navController.navigate("OrderRequestScreen")
+                    }
                 )
             } else {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("No produce selected.")
                 }
             }
+        }
+        composable(route = "FarmerProfileScreen") {
+            val farmer = harvestViewModel.homeUiState.currentFarmer
+            if (farmer != null) {
+                FarmerProfileScreen(
+                    farmer = farmer,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+        }
+        composable(route = "OrderRequestScreen") {
+            val produce = harvestViewModel.homeUiState.currentProduce
+            if (produce != null) {
+                OrderRequestScreen(
+                    produce = produce,
+                    harvestViewModel = harvestViewModel,
+                    onBackClick = { navController.popBackStack() },
+                    onOrderSubmitted = {
+                        navController.navigate(AppDestinations.ORDERS.name) {
+                            popUpTo(AppDestinations.HOME.name)
+                        }
+                    }
+                )
+            }
+        }
+        composable(route = "NotificationScreen") {
+            NotificationScreen(
+                harvestViewModel = harvestViewModel,
+                onBackClick = { navController.popBackStack() }
+            )
         }
         composable(route = "FarmerOrderRequestScreen/{requestId}") { entry ->
             val requestId = entry.arguments?.getString("requestId")

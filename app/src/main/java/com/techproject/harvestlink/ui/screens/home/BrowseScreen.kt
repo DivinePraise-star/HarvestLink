@@ -256,7 +256,7 @@ fun ProduceCard(
                     color = Color(0xFF1B3D2F)
                 )
                 Text(
-                    text = "UGX ${produce.price}/${produce.unit}",
+                    text = "Ugx ${produce.price}/${produce.unit}",
                     fontSize = 13.sp,
                     color = Color(0xFF4CAF50),
                     fontWeight = FontWeight.SemiBold

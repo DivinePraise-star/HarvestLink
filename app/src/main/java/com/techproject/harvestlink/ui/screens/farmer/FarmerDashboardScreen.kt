@@ -178,7 +178,7 @@ fun FarmerDashboardScreen(
                                 color = Color.White.copy(alpha = 0.7f)
                             )
                             Text(
-                                text = "UGX ${"%,d".format(totalEarnings.toInt())}",
+                                text = "Ugx ${"%,d".format(totalEarnings.toInt())}",
                                 fontSize = 26.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -253,7 +253,7 @@ fun OrderRequestCard(request: FarmerOrderRequest, onClick: () -> Unit) {
                 Text(text = request.buyerName, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFF1B3D2F))
                 Text(text = "${request.quantity} kg of ${request.produceName}", fontSize = 13.sp, color = Color.Gray)
                 Text(
-                    text = "UGX ${"%,d".format(request.offeredPricePerKg)}/kg · ${request.requestDate}",
+                    text = "Ugx ${"%,d".format(request.offeredPricePerKg)}/kg · ${request.requestDate}",
                     fontSize = 12.sp,
                     color = Color.Gray
                 )
@@ -300,7 +300,7 @@ fun FarmerListingCard(listing: FarmerListing) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = listing.produceName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF1B3D2F))
                 Text(
-                    text = "${listing.quantityAvailable} kg · UGX ${"%,d".format(listing.pricePerUnit.toInt())}/kg",
+                    text = "${listing.quantityAvailable} kg · Ugx ${"%,d".format(listing.pricePerUnit.toInt())}/kg",
                     fontSize = 13.sp,
                     color = Color.Gray
                 )

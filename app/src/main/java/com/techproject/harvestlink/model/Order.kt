@@ -63,7 +63,7 @@ data class FarmerListing(
 
 @Serializable
 data class FarmerOrderRequest(
-    val id: String = "",
+    val id: String? = null,
     @SerialName("buyer_name") val buyerName: String = "",
     @SerialName("buyer_location") val buyerLocation: String = "",
     @SerialName("produce_name") val produceName: String = "",

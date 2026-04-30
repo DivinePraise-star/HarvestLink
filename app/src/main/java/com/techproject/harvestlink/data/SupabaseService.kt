@@ -16,10 +16,12 @@ object SupabaseService {
             supabaseUrl = SUPABASE_URL,
             supabaseKey = SUPABASE_API_KEY
         ) {
-            defaultSerializer = KotlinXSerializer(Json {
-                ignoreUnknownKeys = true
-                isLenient = true
-            })
+            defaultSerializer = KotlinXSerializer(
+                Json {
+                    ignoreUnknownKeys = true
+                    isLenient = true
+                }
+            )
             install(Postgrest)
         }
     }

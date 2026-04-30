@@ -23,7 +23,9 @@ import com.techproject.harvestlink.model.Produce
 @Composable
 fun ProduceDetailScreen(
     produce: Produce,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onViewProfileClick: (String) -> Unit,
+    onRequestOrderClick: (Produce) -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
         Column(
@@ -53,7 +55,7 @@ fun ProduceDetailScreen(
                 }
             }
 
-            // Content Card (overlaps image in the design, but for simplicity we'll use a Column with negative offset or just standard layout)
+            // Content Card
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -73,7 +75,7 @@ fun ProduceDetailScreen(
 
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
-                        text = "₹${produce.price.toInt()}",
+                        text = "Ugx ${"%,d".format(produce.price.toInt())}",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1B3D2F)
@@ -161,7 +163,7 @@ fun ProduceDetailScreen(
                             }
                         }
                         TextButton(
-                            onClick = { /* TODO */ },
+                            onClick = { onViewProfileClick(produce.farmerId) },
                             contentPadding = PaddingValues(0.dp)
                         ) {
                             Text("View Full Profile →", color = Color(0xFF1B3D2F), fontWeight = FontWeight.Bold)
@@ -175,7 +177,7 @@ fun ProduceDetailScreen(
 
         // Fixed Request Order Button at bottom
         Button(
-            onClick = { /* TODO */ },
+            onClick = { onRequestOrderClick(produce) },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()

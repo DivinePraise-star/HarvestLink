@@ -51,7 +51,10 @@ import com.techproject.harvestlink.ui.ScreenHeader
 import com.techproject.harvestlink.ui.theme.HarvestLinkTheme
 
 @Composable
-fun TrackOrderScreen(){
+fun TrackOrderScreen(
+    onContactFarmer: (String) -> Unit = {},
+    onReorder: (String) -> Unit = {}
+){
     val orderViewModel: OrderViewModel = viewModel()
     val orderUIState = orderViewModel.orderUiState.collectAsState().value
 
@@ -68,7 +71,9 @@ fun TrackOrderScreen(){
                 orderUiState = orderUIState,
                 onClick = {
                     orderViewModel.toggleOrderDetails()
-                }
+                },
+                onContactFarmer = onContactFarmer,
+                onReorder = onReorder
             )
         } else {
             Column(
@@ -230,7 +235,7 @@ fun OrderListItem(
                 .padding(top = 2.dp)
         ){
             Text(
-                text = "UGX ${items.sumOf { it.producePrice?.times(it.quantity) ?: 0.0 }}",
+                text = "Ugx ${items.sumOf { it.producePrice?.times(it.quantity) ?: 0.0 }}",
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
@@ -249,7 +254,9 @@ fun OrderListItem(
 fun OrderDetails(
     order: Order,
     orderUiState: OrderUiState,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onContactFarmer: (String) -> Unit,
+    onReorder: (String) -> Unit
 ) {
     val orderDetails = orderUiState.orders[order]
     Column(
@@ -424,7 +431,7 @@ fun OrderDetails(
                             )
                         }
                         Text(
-                            text = "UGX ${item.producePrice?.times(item.quantity)}",
+                            text = "Ugx ${item.producePrice?.times(item.quantity)}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
@@ -445,7 +452,7 @@ fun OrderDetails(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "UGX ${orderDetails?.sumOf{ it.producePrice?.times(it.quantity) ?: 0.0 }}",
+                        text = "Ugx ${orderDetails?.sumOf{ it.producePrice?.times(it.quantity) ?: 0.0 }}",
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.primary,
@@ -458,7 +465,7 @@ fun OrderDetails(
         ){
             OutlinedButton(
                 shape = RoundedCornerShape(8.dp),
-                onClick = {},
+                onClick = { onContactFarmer(order.farmerId) },
                 modifier = Modifier
                     .padding(end = 8.dp)
                     .weight(1f)
@@ -469,7 +476,10 @@ fun OrderDetails(
             }
             Button(
                 shape = RoundedCornerShape(8.dp),
-                onClick = {},
+                onClick = { 
+                    // Reordering the first item for now or logic to select
+                    orderDetails?.firstOrNull()?.let { onReorder(it.produceName ?: "") }
+                },
                 modifier = Modifier.weight(1f)
             ) {
                 Text(

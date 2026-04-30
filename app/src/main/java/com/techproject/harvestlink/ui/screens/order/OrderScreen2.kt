@@ -104,7 +104,7 @@ package com.techproject.harvestlink.ui.screens.order
 //                Column(horizontalAlignment = Alignment.End) {
 //                    Text(text = "Total Price", fontSize = 12.sp, color = Color.Gray)
 //                    Text(
-//                        text = "$${order.totalPrice.toInt()}",
+//                        text = "Ugx ${order.totalPrice.toInt()}",
 //                        fontWeight = FontWeight.Bold,
 //                        fontSize = 18.sp,
 //                        color = Color(0xFF1B3D2F)

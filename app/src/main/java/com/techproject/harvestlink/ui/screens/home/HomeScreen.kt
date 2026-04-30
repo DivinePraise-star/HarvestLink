@@ -37,14 +37,22 @@ fun HomeScreen(
     onFilterClick: () -> Unit,
     onNavigateToOrders: () -> Unit,
     onNavigateToMessages: () -> Unit,
+    onNavigateToNotifications: () -> Unit,
     onSeeAllClick: () -> Unit,
 ) {
+    val chatListViewModel: ChatListViewModel = viewModel(factory = ChatListViewModel.Factory)
+    val chatState = chatListViewModel.chatListUiState.collectAsState().value
+    val unreadMessagesCount = chatState.conversations.size // Assuming each conversation has unread
 
     val buyerProfile = harvestViewModel.buyerProfile
 
     val produceList = harvestViewModel.produceList
     val farmers = harvestViewModel.farmersList
     val activeOrdersCount = harvestViewModel.activeOrdersCount
+    
+    // Total notifications = active orders + messages + general notifications
+    val notificationCount = activeOrdersCount + unreadMessagesCount + harvestViewModel.notificationCount
+
     val isLoading = harvestViewModel.produceLoading
     val loadError = harvestViewModel.produceError
 
@@ -52,7 +60,7 @@ fun HomeScreen(
     var searchQuery by rememberSaveable { mutableStateOf("") }
     
     val userName = buyerProfile.name
-    val unreadMessagesCount = 9
+    // val unreadMessagesCount = 9 // Removed duplicate
 
     val categories = harvestViewModel.categories
 
@@ -104,12 +112,22 @@ fun HomeScreen(
                 )
             }
             IconButton(
-                onClick = { /* TODO */ },
+                onClick = onNavigateToNotifications,
                 modifier = Modifier
                     .size(40.dp)
                     .background(Color.White, CircleShape)
             ) {
-                Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = Color.Black)
+                BadgedBox(
+                    badge = {
+                        if (notificationCount > 0) {
+                            Badge {
+                                Text(notificationCount.toString())
+                            }
+                        }
+                    }
+                ) {
+                    Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = Color.Black)
+                }
             }
         }
 

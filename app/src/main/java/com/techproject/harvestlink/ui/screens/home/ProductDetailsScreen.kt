@@ -263,7 +263,7 @@ fun ProductDetailsPreview(){
     HarvestLinkTheme(darkTheme = false){
         ProductDetailsScreen(
             productName = "Organic Tomatoes",
-            productPrice = "UGX 40,000",
+            productPrice = "Ugx 40,000",
             productStatus = "Available",
             availableStock = 50,
             farmerLocation = "Mbarara, Uganda",

@@ -109,7 +109,7 @@ fun FilterScreen(
 
             // Price Range Filter
             Text(
-                text = "Price Range (UGX)",
+                text = "Price Range (Ugx)",
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
                 color = Color(0xFF1B3D2F)
@@ -120,12 +120,12 @@ fun FilterScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "UGX ${"%,d".format(priceRange.start.toInt())}",
+                    text = "Ugx ${"%,d".format(priceRange.start.toInt())}",
                     color = Color(0xFF1B3D2F),
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "UGX ${"%,d".format(priceRange.endInclusive.toInt())}",
+                    text = "Ugx ${"%,d".format(priceRange.endInclusive.toInt())}",
                     color = Color(0xFF1B3D2F),
                     fontWeight = FontWeight.SemiBold
                 )

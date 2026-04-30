@@ -10,6 +10,8 @@ import com.techproject.harvestlink.model.Buyer
 import com.techproject.harvestlink.model.Farmer
 import com.techproject.harvestlink.model.Produce
 import com.techproject.harvestlink.model.OrderStatus
+import com.techproject.harvestlink.model.Notification
+import com.techproject.harvestlink.model.NotificationType
 import kotlinx.coroutines.launch
 
 class HarvestViewModel : ViewModel() {
@@ -17,6 +19,12 @@ class HarvestViewModel : ViewModel() {
         private set
 
     var homeUiState by mutableStateOf(HomeUiState())
+        private set
+
+    var notifications by mutableStateOf<List<Notification>>(emptyList())
+        private set
+
+    var notificationCount by mutableStateOf(0)
         private set
 
     var buyerProfile by mutableStateOf<Buyer>(Buyer())
@@ -46,6 +54,47 @@ class HarvestViewModel : ViewModel() {
 
     init {
         loadProduce()
+        seedSampleNotifications()
+    }
+
+    private fun seedSampleNotifications() {
+        notifications = listOf(
+            Notification(
+                id = "1",
+                title = "Order Confirmed",
+                message = "Your order for Organic Tomatoes has been confirmed by Farmer Ritah.",
+                type = NotificationType.ORDER
+            ),
+            Notification(
+                id = "2",
+                title = "New Message",
+                message = "Farmer Eria sent you a message regarding your delivery.",
+                type = NotificationType.CHAT
+            ),
+            Notification(
+                id = "3",
+                title = "Harvest Alert",
+                message = "Fresh Cabbages are now available from nearby farms!",
+                type = NotificationType.PROMO
+            )
+        )
+        updateNotificationCountFromList()
+    }
+
+    private fun updateNotificationCountFromList() {
+        notificationCount = notifications.count { !it.isRead }
+    }
+
+    fun markAllNotificationsAsRead() {
+        notifications = notifications.map { it.copy(isRead = true) }
+        updateNotificationCountFromList()
+    }
+
+    fun markNotificationAsRead(id: String) {
+        notifications = notifications.map { 
+            if (it.id == id) it.copy(isRead = true) else it
+        }
+        updateNotificationCountFromList()
     }
 
     fun setRole(isFarmer: Boolean) {
@@ -119,6 +168,10 @@ class HarvestViewModel : ViewModel() {
         homeUiState = homeUiState.copy(currentProduce = produce)
     }
 
+    fun updateCurrentFarmer(farmer: Farmer) {
+        homeUiState = homeUiState.copy(currentFarmer = farmer)
+    }
+
     /**
      * Filter Logic
      */
@@ -168,12 +221,26 @@ class HarvestViewModel : ViewModel() {
         buyerProfile = Buyer()
     }
 
+    fun submitOrderRequest(request: com.techproject.harvestlink.model.FarmerOrderRequest) {
+        viewModelScope.launch {
+            try {
+                MoreData.createOrderRequest(request)
+            } catch (e: Exception) {
+                // Log or handle error
+            }
+        }
+    }
+
     fun toggleFarmer(){
         homeUiState = homeUiState.copy(isFarmer = !homeUiState.isFarmer)
     }
 
     fun toggleNavBar() {
         homeUiState = homeUiState.copy(showNavBar = !homeUiState.showNavBar)
+    }
+
+    fun updateNotificationCount(count: Int) {
+        notificationCount = count
     }
 }
 
@@ -185,6 +252,7 @@ data class FilterUiState(
 
 data class HomeUiState(
     val currentProduce: Produce? = null,
+    val currentFarmer: Farmer? = null,
     val beginner: Boolean = true,
     val isFarmer:Boolean = false,
     val showNavBar: Boolean = true,

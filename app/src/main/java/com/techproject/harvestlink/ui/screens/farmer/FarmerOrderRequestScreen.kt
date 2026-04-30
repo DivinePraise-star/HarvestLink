@@ -58,7 +58,7 @@ fun FarmerOrderRequestScreen(
             text = {
                 Text(
                     "You're accepting ${request?.quantity ?: "?"} kg of ${request?.produceName ?: "?"} " +
-                            "from ${request?.buyerName ?: "?"} at UGX ${request?.offeredPricePerKg ?: "?"}/kg."
+                            "from ${request?.buyerName ?: "?"} at Ugx ${request?.offeredPricePerKg ?: "?"}/kg."
                 )
             },
             confirmButton = {
@@ -233,7 +233,7 @@ fun FarmerOrderRequestScreen(
                                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp, color = Color.LightGray)
                                 RequestDetailRow("Quantity", "${req.quantity} kg")
                                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp, color = Color.LightGray)
-                                RequestDetailRow("Offered Price", "UGX ${"%,d".format(req.offeredPricePerKg)}/kg")
+                                RequestDetailRow("Offered Price", "Ugx ${"%,d".format(req.offeredPricePerKg)}/kg")
                                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp, color = Color.LightGray)
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -242,7 +242,7 @@ fun FarmerOrderRequestScreen(
                                 ) {
                                     Text("Total Value", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFF1B3D2F))
                                     Text(
-                                        text = "UGX ${"%,d".format(totalValue)}",
+                                        text = "Ugx ${"%,d".format(totalValue)}",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 18.sp,
                                         color = Color(0xFF1B3D2F)
