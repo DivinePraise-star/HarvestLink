@@ -78,7 +78,8 @@ data class FarmerListing(
     @SerialName("quantity_available") val quantityAvailable: Int = 0,
     @SerialName("price_per_unit") val pricePerUnit: Double = 0.0,
     val status: ListingStatus = ListingStatus.ACTIVE,
-    @SerialName("quantity_sold") val quantitySold: Int = 0
+    @SerialName("quantity_sold") val quantitySold: Int = 0,
+    @SerialName("farmer_id") val farmerId: String = ""
 )
 
 @Serializable
@@ -91,7 +92,8 @@ data class FarmerOrderRequest(
     @SerialName("offered_price_per_kg") val offeredPricePerKg: Int = 0,
     @SerialName("buyer_note") val buyerNote: String = "",
     @SerialName("request_date") val requestDate: String = "",
-    @SerialName("is_responded") val isResponded: Boolean = false
+    @SerialName("is_responded") val isResponded: Boolean = false,
+    @SerialName("farmer_id") val farmerId: String = ""
 )
 
 @Serializable

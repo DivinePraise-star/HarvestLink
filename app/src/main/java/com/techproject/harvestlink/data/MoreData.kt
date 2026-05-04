@@ -60,12 +60,24 @@ object MoreData {
             }.decodeList<Produce>()
     }
 
-    suspend fun fetchFarmerListings(): List<FarmerListing> {
-        return SupabaseService.client.from("farmer_listings").select().decodeList<FarmerListing>()
+    suspend fun fetchFarmerListings(farmerId: String? = null): List<FarmerListing> {
+        return if (farmerId == null) {
+            SupabaseService.client.from("farmer_listings").select().decodeList<FarmerListing>()
+        } else {
+            SupabaseService.client.from("farmer_listings").select {
+                filter { eq("farmer_id", farmerId) }
+            }.decodeList<FarmerListing>()
+        }
     }
 
-    suspend fun fetchFarmerOrderRequests(): List<FarmerOrderRequest> {
-        return SupabaseService.client.from("farmer_order_requests").select().decodeList<FarmerOrderRequest>()
+    suspend fun fetchFarmerOrderRequests(farmerId: String? = null): List<FarmerOrderRequest> {
+        return if (farmerId == null) {
+            SupabaseService.client.from("farmer_order_requests").select().decodeList<FarmerOrderRequest>()
+        } else {
+            SupabaseService.client.from("farmer_order_requests").select {
+                filter { eq("farmer_id", farmerId) }
+            }.decodeList<FarmerOrderRequest>()
+        }
     }
 
     suspend fun fetchBuyerOrders(userId: String): List<OrderDetails> {

@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -20,32 +21,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.techproject.harvestlink.data.MoreData
 import com.techproject.harvestlink.model.FarmerListing
 import com.techproject.harvestlink.model.FarmerOrderRequest
 import com.techproject.harvestlink.model.ListingStatus
 
 @Composable
 fun FarmerDashboardScreen(
-    onOrderRequestClick: (FarmerOrderRequest) -> Unit = {}
+    onOrderRequestClick: (FarmerOrderRequest) -> Unit = {},
+    viewModel: FarmerViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
-    var listings by remember { mutableStateOf<List<FarmerListing>>(emptyList()) }
-    var orderRequests by remember { mutableStateOf<List<FarmerOrderRequest>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
+    val uiState by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(Unit) {
-        isLoading = true
-        error = null
-        try {
-            listings = MoreData.fetchFarmerListings()
-            orderRequests = MoreData.fetchFarmerOrderRequests()
-        } catch (e: Exception) {
-            error = e.localizedMessage ?: "Unknown error"
-        } finally {
-            isLoading = false
-        }
-    }
+    val listings = uiState.listings
+    val orderRequests = uiState.orderRequests
+    val isLoading = uiState.isLoading
+    val error = uiState.error
 
     val activeListings = listings.count { it.status == ListingStatus.ACTIVE }
     val pendingRequests = orderRequests.count { !it.isResponded }
@@ -112,7 +102,7 @@ fun FarmerDashboardScreen(
                 Column {
                     Text(text = "Welcome back,", fontSize = 16.sp, color = Color.Gray)
                     Text(
-                        text = "Ritah Patience!",
+                        text = "${uiState.farmerName}!",
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1B3D2F)
