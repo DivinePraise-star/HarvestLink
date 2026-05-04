@@ -11,9 +11,34 @@ import com.techproject.harvestlink.model.OrderIdResponse
 import com.techproject.harvestlink.model.OrderItem
 import com.techproject.harvestlink.model.OrderInsert
 import com.techproject.harvestlink.model.OrderItemInsert
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.auth.user.UserInfo
 import io.github.jan.supabase.postgrest.from
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 object MoreData {
+
+    suspend fun signUp(email: String, password: String, name: String, role: String, number: String, location: String): UserInfo? {
+        return SupabaseService.client.auth.signUpWith(Email) {
+            this.email = email
+            this.password = password
+            data = buildJsonObject {
+                put("name", name)
+                put("role", role)
+                put("number", number)
+                put("location", location)
+            }
+        }
+    }
+
+    suspend fun signIn(email: String, password: String){
+        SupabaseService.client.auth.signInWith(Email) {
+                this.email = email
+                this.password = password
+        }
+    }
 
     suspend fun fetchFarmers(): List<Farmer> {
         return SupabaseService.client.from("farmers_list").select().decodeList<Farmer>()

@@ -1,5 +1,6 @@
 package com.techproject.harvestlink.ui.screens.auth
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -14,12 +15,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.techproject.harvestlink.data.MoreData
+import io.github.jan.supabase.auth.exception.AuthRestException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -42,6 +46,7 @@ fun SignUpScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var currentStep by remember { mutableStateOf(1) } // 1: Basic Info, 2: Role & Location
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -185,11 +190,27 @@ fun SignUpScreen(
                             isLoading = true
                             errorMessage = null
 
-                            // Simulate registration
                             scope.launch {
-                                delay(1500)
-                                isLoading = false
-                                onSignUpSuccess(selectedRole)
+                                try{
+                                    val response = MoreData.signUp(
+                                        email = email,
+                                        password = password,
+                                        name = fullName,
+                                        role = selectedRole,
+                                        number = phoneNumber,
+                                        location = location
+                                    )
+                                    if (response != null) {
+                                        isLoading = false
+                                        onSignUpSuccess(selectedRole)
+                                    }
+                                }catch (e: AuthRestException) {
+                                    isLoading = false
+                                    Toast.makeText(context,"Auth Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }catch (e: Exception){
+                                    isLoading = false
+                                    Toast.makeText(context,"Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
                             }
                         }
                     }

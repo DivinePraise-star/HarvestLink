@@ -48,6 +48,7 @@ android {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.supabase.kt)
+    implementation(libs.auth.kt)
     implementation(libs.postgrest.kt)
     implementation(libs.ktor.client.okhttp)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -66,6 +67,7 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.datastore.preferences)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

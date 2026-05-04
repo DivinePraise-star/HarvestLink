@@ -11,6 +11,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.techproject.harvestlink.HarvestLinkApplication
 import com.techproject.harvestlink.data.MoreData
+import com.techproject.harvestlink.data.SessionManager
 import com.techproject.harvestlink.data.chats.ChatRepository
 import com.techproject.harvestlink.model.Buyer
 import com.techproject.harvestlink.model.Farmer
@@ -20,7 +21,10 @@ import com.techproject.harvestlink.model.Notification
 import com.techproject.harvestlink.model.NotificationType
 import kotlinx.coroutines.launch
 
-class HarvestViewModel(val chatRepository: ChatRepository) : ViewModel() {
+class HarvestViewModel(
+    val chatRepository: ChatRepository,
+    val sessionManager: SessionManager
+) : ViewModel() {
     var filterUiState by mutableStateOf(FilterUiState())
         private set
 
@@ -248,7 +252,7 @@ class HarvestViewModel(val chatRepository: ChatRepository) : ViewModel() {
             initializer {
                 val app = (this[APPLICATION_KEY] as HarvestLinkApplication)
                 val chatRepo = app.container.repository
-                HarvestViewModel(chatRepo)
+                HarvestViewModel(chatRepo, app.sessionManager)
             }
         }
     }

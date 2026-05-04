@@ -1,5 +1,16 @@
 package com.techproject.harvestlink.ui.screens.auth
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.with
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -11,13 +22,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.launch
+import kotlin.math.absoluteValue
 
-// Onboarding page data matching your Figma
+// Onboarding page data
 data class OnboardingPage(
     val mainTitle: String,
     val subtitle: String,
@@ -36,7 +51,6 @@ val onboardingPages = listOf(
         trustTitle = "Trusted & Transparent",
         trustDescription = "Verified farmers, real-time listings, and secure transactions you can count on."
     ),
-    // Page 2 - You can customize this based on your second splash page
     OnboardingPage(
         mainTitle = "HarvestLink",
         subtitle = "FROM SOIL TO SALE",
@@ -45,7 +59,6 @@ val onboardingPages = listOf(
         trustTitle = "Support Local Farmers",
         trustDescription = "Every purchase directly supports small-scale farmers and sustainable agriculture."
     ),
-    // Page 3
     OnboardingPage(
         mainTitle = "HarvestLink",
         subtitle = "FROM SOIL TO SALE",
@@ -56,6 +69,7 @@ val onboardingPages = listOf(
     )
 )
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun OnboardingScreen(
     onFinish: () -> Unit
@@ -63,22 +77,24 @@ fun OnboardingScreen(
     val pagerState = rememberPagerState(pageCount = { onboardingPages.size })
     val coroutineScope = rememberCoroutineScope()
 
+    // Centralized animation duration for consistency
+    val animationDuration = 600
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
     ) {
-        // Skip button (hidden on last page)
-        if (pagerState.currentPage < onboardingPages.size - 1) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
-            ) {
-                TextButton(
-                    onClick = onFinish,
-                    modifier = Modifier.align(Alignment.TopEnd)
-                ) {
+        // Top Bar / Skip Button
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .height(48.dp),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            if (pagerState.currentPage < onboardingPages.size - 1) {
+                TextButton(onClick = onFinish) {
                     Text(
                         text = "Skip",
                         color = Color.Gray,
@@ -87,24 +103,27 @@ fun OnboardingScreen(
                     )
                 }
             }
-        } else {
-            Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // Pager content
+        // Animated Pager
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
         ) { page ->
+
+            // Calculate offset for parallax and alpha animations
+            val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
+
             OnboardingPageContent(
                 page = onboardingPages[page],
+                pageOffset = pageOffset,
                 modifier = Modifier.fillMaxSize()
             )
         }
 
-        // Page indicators (dots)
+        // Smooth Page Indicators (Dots)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -113,22 +132,37 @@ fun OnboardingScreen(
         ) {
             repeat(onboardingPages.size) { index ->
                 val isSelected = pagerState.currentPage == index
+
+                // Slowed down the dot transitions to match the new page scroll speed
+                val width by animateDpAsState(
+                    targetValue = if (isSelected) 28.dp else 8.dp,
+                    animationSpec = tween(
+                        durationMillis = animationDuration,
+                        easing = FastOutSlowInEasing
+                    ),
+                    label = "width"
+                )
+                val color by animateColorAsState(
+                    targetValue = if (isSelected) Color(0xFF1B3D2F) else Color.LightGray.copy(alpha = 0.5f),
+                    animationSpec = tween(
+                        durationMillis = animationDuration,
+                        easing = FastOutSlowInEasing
+                    ),
+                    label = "color"
+                )
+
                 Box(
                     modifier = Modifier
                         .padding(horizontal = 4.dp)
-                        .size(if (isSelected) 24.dp else 8.dp)
+                        .height(8.dp)
+                        .width(width)
                         .clip(CircleShape)
-                        .background(
-                            if (isSelected)
-                                Color(0xFF1B3D2F)
-                            else
-                                Color.LightGray.copy(alpha = 0.5f)
-                        )
+                        .background(color)
                 )
             }
         }
 
-        // Next/Get Started button
+        // Animated Bottom Button
         val isLastPage = pagerState.currentPage == onboardingPages.size - 1
 
         Button(
@@ -137,36 +171,57 @@ fun OnboardingScreen(
                     onFinish()
                 } else {
                     coroutineScope.launch {
-                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                        // Added custom animationSpec for a much smoother, slower glide
+                        pagerState.animateScrollToPage(
+                            page = pagerState.currentPage + 1,
+                            animationSpec = tween(
+                                durationMillis = animationDuration,
+                                easing = FastOutSlowInEasing
+                            )
+                        )
                     }
                 }
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp, vertical = 16.dp)
+                .padding(bottom = 16.dp)
                 .height(56.dp),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFF1B3D2F)
+            ),
+            elevation = ButtonDefaults.buttonElevation(
+                defaultElevation = 4.dp,
+                pressedElevation = 8.dp
             )
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = if (isLastPage) "Get Started" else "Next",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                if (!isLastPage) {
-                    Spacer(modifier = Modifier.width(4.dp))
+            AnimatedContent(
+                targetState = isLastPage,
+                transitionSpec = {
+                    // Slightly softened the button text transition as well
+                    (fadeIn(tween(300)) + slideInVertically { height -> height / 2 }) with
+                            (fadeOut(tween(300)) + slideOutVertically { height -> -height / 2 })
+                }, label = "buttonText"
+            ) { targetIsLast ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
                     Text(
-                        text = "→",
-                        fontSize = 20.sp,
+                        text = if (targetIsLast) "Get Started" else "Next",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
+                    if (!targetIsLast) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "→",
+                            fontSize = 20.sp,
+                            color = Color.White
+                        )
+                    }
                 }
             }
         }
@@ -176,123 +231,106 @@ fun OnboardingScreen(
 @Composable
 fun OnboardingPageContent(
     page: OnboardingPage,
+    pageOffset: Float,
     modifier: Modifier = Modifier
 ) {
+    // Math to calculate scale and alpha based on scroll position
+    val contentAlpha = lerp(start = 0.2f, stop = 1f, fraction = 1f - pageOffset.coerceIn(0f, 1f))
+    val illustrationScale = lerp(start = 0.8f, stop = 1f, fraction = 1f - pageOffset.coerceIn(0f, 1f))
+
     Column(
         modifier = modifier
             .padding(horizontal = 24.dp)
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .graphicsLayer {
+                alpha = contentAlpha
+            },
         horizontalAlignment = Alignment.Start
     ) {
-        Spacer(modifier = Modifier.height(20.dp))
-
         // Logo/Icon area
         Box(
             modifier = Modifier
-                .size(60.dp)
+                .size(56.dp)
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFF1B3D2F)),
+                .background(Color(0xFF1B3D2F).copy(alpha = 0.1f)),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "🌾",
-                fontSize = 30.sp
-            )
+            Text(text = "🌾", fontSize = 28.sp)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Main Title
         Text(
             text = page.mainTitle,
             fontSize = 36.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF1B3D2F)
+            fontWeight = FontWeight.ExtraBold,
+            color = Color(0xFF1B3D2F),
+            letterSpacing = (-0.5).sp
         )
 
-        // Subtitle
         Text(
             text = page.subtitle,
-            fontSize = 14.sp,
-            color = Color.Gray,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color(0xFF1B3D2F).copy(alpha = 0.6f),
             letterSpacing = 2.sp,
             modifier = Modifier.padding(top = 4.dp)
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
-        // Illustration placeholder (matches your Figma)
+        // Elevated Illustration Card with Parallax Scale
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color(0xFFF5F5F5)
-            )
+                .height(200.dp)
+                .graphicsLayer {
+                    scaleX = illustrationScale
+                    scaleY = illustrationScale
+                },
+            shape = RoundedCornerShape(24.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(Color(0xFFF0F5F2), Color(0xFFE2EBE5))
+                        )
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                // Replace with actual image when available
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "🌱",
-                        fontSize = 48.sp
-                    )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "🌱", fontSize = 56.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Illustration",
                         fontSize = 14.sp,
-                        color = Color.Gray
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF1B3D2F).copy(alpha = 0.5f)
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
-        // HarvestLink FROM SOIL TO SALE
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "HarvestLink",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1B3D2F)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "FROM SOIL TO SALE",
-                fontSize = 10.sp,
-                color = Color.Gray,
-                letterSpacing = 1.sp
-            )
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Feature section
+        // Feature items
         FeatureItem(
             emoji = "📄",
             title = page.featureTitle,
             description = page.featureDescription
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        // Trust section
         FeatureItem(
             emoji = "✓",
             title = page.trustTitle,
             description = page.trustDescription,
             emojiColor = Color(0xFF4CAF50)
         )
-
-        Spacer(modifier = Modifier.height(20.dp))
     }
 }
 
@@ -304,39 +342,34 @@ fun FeatureItem(
     emojiColor: Color = Color(0xFF1B3D2F)
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top
     ) {
-        // Emoji/Icon circle
         Box(
             modifier = Modifier
-                .size(40.dp)
+                .size(44.dp)
                 .clip(CircleShape)
-                .background(emojiColor.copy(alpha = 0.1f)),
+                .background(emojiColor.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = emoji,
-                fontSize = 20.sp
-            )
+            Text(text = emoji, fontSize = 20.sp)
         }
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                fontSize = 16.sp,
+                fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1B3D2F)
+                color = Color(0xFF1A1A1A)
             )
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = description,
                 fontSize = 14.sp,
                 color = Color.Gray,
-                lineHeight = 20.sp,
-                modifier = Modifier.padding(top = 4.dp)
+                lineHeight = 22.sp
             )
         }
     }
