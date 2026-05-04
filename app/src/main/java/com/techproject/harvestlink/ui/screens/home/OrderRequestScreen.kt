@@ -139,7 +139,7 @@ fun OrderRequestScreen(
                     requestDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()),
                     isResponded = false
                 )
-                harvestViewModel.submitOrderRequest(orderRequest)
+                //harvestViewModel.submitOrderRequest(orderRequest)
                 onOrderSubmitted() 
             },
             modifier = Modifier.fillMaxWidth().height(56.dp),
