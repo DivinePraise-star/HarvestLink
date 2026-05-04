@@ -12,6 +12,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -35,14 +36,15 @@ import com.techproject.harvestlink.ui.screens.home.FarmerProfileScreen
 import com.techproject.harvestlink.ui.screens.home.FilterScreen
 import com.techproject.harvestlink.ui.screens.home.HomeScreen
 import com.techproject.harvestlink.ui.screens.home.NotificationScreen
-import com.techproject.harvestlink.ui.screens.home.OrderRequestScreen
 import com.techproject.harvestlink.ui.screens.home.ProduceDetailScreen
+import com.techproject.harvestlink.ui.screens.order.PlaceOrderScreen
 import com.techproject.harvestlink.ui.screens.order.TrackOrderScreen
+import kotlinx.coroutines.launch
 
 @Composable
 fun HarvestLinkApp() {
     val navController = rememberNavController()
-    val harvestViewModel: HarvestViewModel = viewModel()
+    val harvestViewModel: HarvestViewModel = viewModel(factory = HarvestViewModel.Factory)
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -75,6 +77,7 @@ fun MainScreen(
     harvestViewModel: HarvestViewModel,
     modifier: Modifier = Modifier
 ){
+    val scope = rememberCoroutineScope()
     NavHost(
         navController = navController,
         startDestination = AppDestinations.HOME.name,
@@ -180,9 +183,14 @@ fun MainScreen(
                             navController.navigate("FarmerProfileScreen")
                         }
                     },
-                    onRequestOrderClick = { produceToOrder ->
-                        harvestViewModel.updateCurrentProduce(produceToOrder)
-                        navController.navigate("OrderRequestScreen")
+                    onMessage = {
+                        scope.launch {
+                            val conversationId = harvestViewModel.getOrCreateConversation(produce.farmerId)
+                            navController.navigate("${AppDestinations.MESSAGES.name}/$conversationId/${produce.farmerId}")
+                        }
+                    },
+                    onRequest = {
+                        navController.navigate("PlaceOrderScreen/${produce.farmerId}")
                     }
                 )
             } else {
@@ -200,20 +208,17 @@ fun MainScreen(
                 )
             }
         }
-        composable(route = "OrderRequestScreen") {
-            val produce = harvestViewModel.homeUiState.currentProduce
-            if (produce != null) {
-                OrderRequestScreen(
-                    produce = produce,
-                    harvestViewModel = harvestViewModel,
-                    onBackClick = { navController.popBackStack() },
-                    onOrderSubmitted = {
-                        navController.navigate(AppDestinations.ORDERS.name) {
-                            popUpTo(AppDestinations.HOME.name)
-                        }
+        composable(route = "PlaceOrderScreen/{farmerId}"){
+            val farmerId = it.arguments?.getString("farmerId")
+            PlaceOrderScreen(
+                harvestViewModel,
+                farmerId = farmerId,
+                onSuccess = {value ->
+                    if(value > 0){
+                        navController.navigate(AppDestinations.HOME.name)
                     }
-                )
-            }
+                }
+            )
         }
         composable(route = "NotificationScreen") {
             NotificationScreen(

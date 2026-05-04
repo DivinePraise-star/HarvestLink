@@ -1,5 +1,7 @@
 package com.techproject.harvestlink.ui.screens.home
 
+import android.annotation.SuppressLint
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -8,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -15,31 +18,51 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.techproject.harvestlink.R
 import com.techproject.harvestlink.model.Produce
+import java.util.Locale
 
 @Composable
 fun ProduceDetailScreen(
     produce: Produce,
     onBackClick: () -> Unit,
     onViewProfileClick: (String) -> Unit,
-    onRequestOrderClick: (Produce) -> Unit
+    onMessage:() -> Unit,
+    onRequest:() -> Unit
 ) {
-    Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(Color.White)) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            // Header Image with Back Button
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(300.dp)
-                    .background(Color(0xFFFFEBEE)) // Placeholder for tomato image
             ) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(produce.imageUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    error = painterResource(R.drawable.placeholder),
+                    modifier = Modifier
+                        .fillMaxSize()
+                )
                 IconButton(
                     onClick = onBackClick,
                     modifier = Modifier
@@ -55,7 +78,6 @@ fun ProduceDetailScreen(
                 }
             }
 
-            // Content Card
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -75,7 +97,7 @@ fun ProduceDetailScreen(
 
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
-                        text = "Ugx ${"%,d".format(produce.price.toInt())}",
+                        text = "UGX ${String.format(Locale.US,"%,d",produce.price.toInt())}",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1B3D2F)
@@ -144,17 +166,21 @@ fun ProduceDetailScreen(
                             Column(modifier = Modifier.weight(1f)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = "Farmer",
+                                        text = produce.farmerName,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 16.sp
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Box(modifier = Modifier.size(8.dp).background(Color(0xFF4CAF50), CircleShape))
+                                    Box(modifier = Modifier
+                                        .size(8.dp)
+                                        .background(Color(0xFF4CAF50), CircleShape))
                                 }
                                 Text(
                                     text = "ID: ${produce.farmerId}",
                                     color = Color.Gray,
-                                    fontSize = 13.sp
+                                    fontSize = 13.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -175,18 +201,42 @@ fun ProduceDetailScreen(
             }
         }
 
-        // Fixed Request Order Button at bottom
-        Button(
-            onClick = { onRequestOrderClick(produce) },
+        Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .padding(16.dp)
-                .height(56.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B3D2F))
-        ) {
-            Text("Request Order", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        ){
+            Button(
+                onClick = onRequest,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B3D2F)),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(56.dp),
+            ) {
+                Text(
+                    "Request Order",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+            }
+            Button(
+                onClick = onMessage,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B3D2F)),
+                modifier = Modifier
+                    .width(80.dp)
+                    .padding(start = 8.dp)
+                    .height(56.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Mail,
+                    contentDescription = null,
+                    tint = Color.White,
+                )
+            }
         }
     }
 }

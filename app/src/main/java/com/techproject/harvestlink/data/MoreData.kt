@@ -48,7 +48,7 @@ object MoreData {
     }
 
     suspend fun fetchProduce(): List<Produce> {
-        return SupabaseService.client.from("produce").select().decodeList<Produce>()
+        return SupabaseService.client.from("produce_details").select().decodeList<Produce>()
     }
 
     suspend fun fetchFarmerProduce(farmerId: String): List<Produce>{
