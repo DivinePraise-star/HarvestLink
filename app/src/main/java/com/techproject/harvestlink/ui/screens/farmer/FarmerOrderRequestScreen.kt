@@ -20,7 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.techproject.harvestlink.data.MoreData
 import com.techproject.harvestlink.model.FarmerOrderRequest
-
+import com.techproject.harvestlink.data.SupabaseService
+import io.github.jan.supabase.auth.auth
 @Composable
 fun FarmerOrderRequestScreen(
     requestId: String?,
@@ -34,9 +35,10 @@ fun FarmerOrderRequestScreen(
 
     LaunchedEffect(requestId) {
         isLoading = true
-        error = null
         try {
-            val requests = MoreData.fetchFarmerOrderRequests()
+            val currentUser = SupabaseService.client.auth.currentUserOrNull()
+            val farmerId = currentUser?.id
+            val requests = MoreData.fetchFarmerOrderRequests(farmerId)
             request = requests.find { it.id == requestId }
             if (request == null) error = "Request not found"
         } catch (e: Exception) {

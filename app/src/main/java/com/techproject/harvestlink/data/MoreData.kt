@@ -2,15 +2,15 @@ package com.techproject.harvestlink.data
 
 import com.techproject.harvestlink.model.Buyer
 import com.techproject.harvestlink.model.Farmer
-import com.techproject.harvestlink.model.FarmerListing
 import com.techproject.harvestlink.model.FarmerOrderRequest
-import com.techproject.harvestlink.model.Produce
-import com.techproject.harvestlink.model.OrderDetails
 import com.techproject.harvestlink.model.Order
+import com.techproject.harvestlink.model.OrderDetails
 import com.techproject.harvestlink.model.OrderIdResponse
-import com.techproject.harvestlink.model.OrderItem
 import com.techproject.harvestlink.model.OrderInsert
+import com.techproject.harvestlink.model.OrderItem
 import com.techproject.harvestlink.model.OrderItemInsert
+import com.techproject.harvestlink.model.Produce
+import com.techproject.harvestlink.model.ProduceInsert
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.user.UserInfo
@@ -20,7 +20,16 @@ import kotlinx.serialization.json.put
 
 object MoreData {
 
-    suspend fun signUp(email: String, password: String, name: String, role: String, number: String, location: String): UserInfo? {
+    // ─── Auth ────────────────────────────────────────────────────────────────
+
+    suspend fun signUp(
+        email: String,
+        password: String,
+        name: String,
+        role: String,
+        number: String,
+        location: String
+    ): UserInfo? {
         return SupabaseService.client.auth.signUpWith(Email) {
             this.email = email
             this.password = password
@@ -33,16 +42,83 @@ object MoreData {
         }
     }
 
-    suspend fun signIn(email: String, password: String){
+    suspend fun signIn(email: String, password: String) {
         SupabaseService.client.auth.signInWith(Email) {
-                this.email = email
-                this.password = password
+            this.email = email
+            this.password = password
         }
     }
+
+    // ─── Farmers ─────────────────────────────────────────────────────────────
 
     suspend fun fetchFarmers(): List<Farmer> {
         return SupabaseService.client.from("farmers_list").select().decodeList<Farmer>()
     }
+
+    suspend fun fetchFarmerById(farmerId: String): Farmer? {
+        return SupabaseService.client.from("farmers_list")
+            .select { filter { eq("id", farmerId) } }
+            .decodeList<Farmer>()
+            .firstOrNull()
+    }
+
+    // ─── Produce / Farmer Listings ───────────────────────────────────────────
+
+    suspend fun fetchProduce(): List<Produce> {
+        return SupabaseService.client.from("produce_details").select().decodeList<Produce>()
+    }
+
+    suspend fun fetchFarmerProduce(farmerId: String): List<Produce> {
+        return SupabaseService.client.from("produce_details")
+            .select { filter { eq("farmer_id", farmerId) } }
+            .decodeList<Produce>()
+    }
+
+    suspend fun fetchFarmerListings(farmerId: String? = null): List<Produce> {
+        return if (farmerId != null) {
+            SupabaseService.client.from("produce")
+                .select { filter { eq("farmer_id", farmerId) } }
+                .decodeList<Produce>()
+        } else {
+            SupabaseService.client.from("produce").select().decodeList<Produce>()
+        }
+    }
+
+    // Uses ProduceInsert to avoid sending farmerName which doesn't exist in the table
+    suspend fun addFarmerListing(produce: Produce) {
+        val insert = ProduceInsert(
+            farmerId = produce.farmerId,
+            name = produce.name,
+            category = produce.category,
+            unit = produce.unit,
+            description = produce.description.ifBlank { "" },
+            harvestDate = produce.harvestDate.ifBlank { null },
+            imageUrl = produce.imageUrl,
+            price = produce.price,
+            availableQuantity = produce.availableQuantity,
+            rating = produce.rating
+        )
+        SupabaseService.client.from("produce").insert(insert)
+    }
+
+    // ─── Order Requests ───────────────────────────────────────────────────────
+
+    suspend fun fetchFarmerOrderRequests(farmerId: String? = null): List<FarmerOrderRequest> {
+        return if (farmerId != null) {
+            SupabaseService.client.from("farmer_order_requests")
+                .select { filter { eq("farmer_id", farmerId) } }
+                .decodeList<FarmerOrderRequest>()
+        } else {
+            SupabaseService.client.from("farmer_order_requests").select()
+                .decodeList<FarmerOrderRequest>()
+        }
+    }
+
+    suspend fun createOrderRequest(request: FarmerOrderRequest) {
+        SupabaseService.client.from("farmer_order_requests").insert(request)
+    }
+
+    // ─── Buyers ───────────────────────────────────────────────────────────────
 
     suspend fun fetchBuyers(): List<Buyer> {
         return SupabaseService.client.from("buyers_list").select().decodeList<Buyer>()
@@ -51,79 +127,31 @@ object MoreData {
     suspend fun updateBuyer(buyer: Buyer) {
         try {
             SupabaseService.client.from("buyers").update(buyer) {
-                filter {
-                    eq("id", buyer.id)
-                }
+                filter { eq("id", buyer.id) }
             }
-        }catch (e: Exception){
+        } catch (e: Exception) {
             e.printStackTrace()
         }
     }
-    suspend fun addFarmerListing(listing: FarmerListing) {
-        SupabaseService.client.from("farmer_listings").insert(listing)
-    }
+
     suspend fun deleteBuyer(id: String) {
         try {
             SupabaseService.client.from("users").delete {
-                filter {
-                    eq("id", id)
-                }
+                filter { eq("id", id) }
             }
-        }catch (e: Exception){
+        } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    suspend fun fetchProduce(): List<Produce> {
-        return SupabaseService.client.from("produce_details").select().decodeList<Produce>()
-    }
-
-    suspend fun fetchFarmerProduce(farmerId: String): List<Produce>{
-        return SupabaseService.client.from("produce_details")
-            .select {
-                filter {
-                    eq("farmer_id", farmerId)
-                }
-            }.decodeList<Produce>()
-    }
-
-    suspend fun fetchFarmerListings(farmerId: String? = null): List<FarmerListing> {
-        return if (farmerId != null) {
-            SupabaseService.client.from("farmer_listings")
-                .select { filter { eq("farmer_id", farmerId) } }
-                .decodeList()
-        } else {
-            SupabaseService.client.from("farmer_listings").select().decodeList()
-        }
-    }
-
-    suspend fun fetchFarmerOrderRequests(farmerId: String? = null): List<FarmerOrderRequest> {
-        return if (farmerId != null) {
-            SupabaseService.client.from("farmer_order_requests")
-                .select { filter { eq("farmer_id", farmerId) } }
-                .decodeList()
-        } else {
-            SupabaseService.client.from("farmer_order_requests").select().decodeList()
-        }
-    }
+    // ─── Orders ───────────────────────────────────────────────────────────────
 
     suspend fun fetchBuyerOrders(userId: String): List<OrderDetails> {
         return SupabaseService.client.from("order_details").select {
-            filter {
-                eq("buyer_id", userId)
-            }
+            filter { eq("buyer_id", userId) }
         }.decodeList<OrderDetails>()
     }
 
-    suspend fun createOrderRequest(request: FarmerOrderRequest) {
-        SupabaseService.client.from("farmer_order_requests").insert(request)
-    }
-    suspend fun fetchFarmerById(farmerId: String): Farmer? {
-        return SupabaseService.client.from("farmers_list")
-            .select { filter { eq("id", farmerId) } }
-            .decodeList<Farmer>()
-            .firstOrNull()
-    }
     suspend fun placeOrder(order: Order, orderItems: List<OrderItem>): Long {
         val orderInsert = OrderInsert(
             orderDate = System.currentTimeMillis(),

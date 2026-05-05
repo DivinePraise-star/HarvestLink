@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.techproject.harvestlink.data.MoreData
 import com.techproject.harvestlink.data.SupabaseService
-import com.techproject.harvestlink.model.FarmerListing
 import com.techproject.harvestlink.model.FarmerOrderRequest
+import com.techproject.harvestlink.model.Produce
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class FarmerUiState(
-    val listings: List<FarmerListing> = emptyList(),
+    val listings: List<Produce> = emptyList(),
     val orderRequests: List<FarmerOrderRequest> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
@@ -34,15 +34,12 @@ class FarmerViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                // Get the logged-in user's ID from Supabase Auth
                 val currentUser = SupabaseService.client.auth.currentUserOrNull()
                 val farmerId = currentUser?.id
 
-                // Fetch data filtered to this farmer only
                 //val listings = MoreData.fetchFarmerListings(farmerId)
                 //val requests = MoreData.fetchFarmerOrderRequests(farmerId)
 
-                // Fetch this farmer's profile for their name and location
                 val farmerProfile = if (farmerId != null) {
                     MoreData.fetchFarmerById(farmerId)
                 } else null

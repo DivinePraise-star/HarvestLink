@@ -20,9 +20,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.techproject.harvestlink.data.MoreData
-import com.techproject.harvestlink.model.FarmerListing
-import com.techproject.harvestlink.model.ListingStatus
+import com.techproject.harvestlink.model.Produce
 
+private val categories = listOf("Vegetables", "Fruits", "Grains", "Legumes", "Tubers", "Other")
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddListingScreen(
     farmerId: String,
@@ -32,18 +33,20 @@ fun AddListingScreen(
     var produceName by remember { mutableStateOf("") }
     var quantityAvailable by remember { mutableStateOf("") }
     var pricePerUnit by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("") }
+    var categoryExpanded by remember { mutableStateOf(false) }
 
     var isSubmitting by remember { mutableStateOf(false) }
     var submitError by remember { mutableStateOf<String?>(null) }
     var showSuccessDialog by remember { mutableStateOf(false) }
 
-    // Inline validation — only shown after the user has typed something
     val nameError = produceName.isNotBlank() && produceName.length < 2
-    val quantityError = quantityAvailable.isNotBlank() && quantityAvailable.toIntOrNull() == null
+    val quantityError = quantityAvailable.isNotBlank() && quantityAvailable.toDoubleOrNull() == null
     val priceError = pricePerUnit.isNotBlank() && pricePerUnit.toDoubleOrNull() == null
 
     val formValid = produceName.isNotBlank() &&
-            quantityAvailable.toIntOrNull() != null &&
+            category.isNotBlank() &&
+            quantityAvailable.toDoubleOrNull() != null &&
             pricePerUnit.toDoubleOrNull() != null &&
             !isSubmitting
 
@@ -61,20 +64,25 @@ fun AddListingScreen(
         )
     }
 
-    // Submission runs here so it has a coroutine scope
+    // Submission coroutine
     if (isSubmitting) {
         LaunchedEffect(Unit) {
             try {
-                val newListing = FarmerListing(
+                val newProduce = Produce(
                     id = "",
                     farmerId = farmerId,
-                    produceName = produceName.trim(),
-                    quantityAvailable = quantityAvailable.toInt(),
-                    quantitySold = 0,
-                    pricePerUnit = pricePerUnit.toDouble(),
-                    status = ListingStatus.ACTIVE
+                    name = produceName.trim(),
+                    price = pricePerUnit.toDouble(),
+                    availableQuantity = quantityAvailable.toDouble(),
+                    unit = "kg",
+                    category = category,        // ✅ now correctly passed
+                    farmerName = "",
+                    description = "",
+                    harvestDate = "",
+                    imageUrl = null,
+                    rating = 0.0
                 )
-                MoreData.addFarmerListing(newListing)
+                MoreData.addFarmerListing(newProduce)
                 showSuccessDialog = true
             } catch (e: Exception) {
                 submitError = e.localizedMessage ?: "Failed to post listing"
@@ -94,7 +102,7 @@ fun AddListingScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            // Header — matches the style of FarmerOrderRequestScreen
+            // Header
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -160,7 +168,43 @@ fun AddListingScreen(
                     errorMessage = "Name must be at least 2 characters"
                 )
 
-                // Quantity and price side by side
+                ExposedDropdownMenuBox(
+                    expanded = categoryExpanded,
+                    onExpandedChange = { categoryExpanded = !categoryExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = category,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Category") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF1B3D2F),
+                            unfocusedBorderColor = Color.LightGray,
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White
+                        )
+                    )
+                    ExposedDropdownMenu(
+                        expanded = categoryExpanded,
+                        onDismissRequest = { categoryExpanded = false }
+                    ) {
+                        categories.forEach { cat ->
+                            DropdownMenuItem(
+                                text = { Text(cat) },
+                                onClick = { category = cat; categoryExpanded = false }
+                            )
+                        }
+                    }
+                }
+
+                // Quantity and price
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -172,7 +216,7 @@ fun AddListingScreen(
                         placeholder = "e.g. 500",
                         keyboardType = KeyboardType.Number,
                         isError = quantityError,
-                        errorMessage = "Whole number only",
+                        errorMessage = "Enter a valid number",
                         modifier = Modifier.weight(1f)
                     )
                     ListingTextField(
@@ -187,11 +231,10 @@ fun AddListingScreen(
                     )
                 }
 
-                // Live total value summary — only shows once the form is valid
+                // Live total value card
                 if (formValid) {
-                    val qty = quantityAvailable.toIntOrNull() ?: 0
+                    val qty = quantityAvailable.toDoubleOrNull() ?: 0.0
                     val price = pricePerUnit.toDoubleOrNull() ?: 0.0
-                    val total = qty * price
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
@@ -206,7 +249,7 @@ fun AddListingScreen(
                             Column {
                                 Text("Total value", fontSize = 12.sp, color = Color(0xFF2E7D32))
                                 Text(
-                                    text = "Ugx ${"%,.0f".format(total)}",
+                                    text = "Ugx ${"%,.0f".format(qty * price)}",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 18.sp,
                                     color = Color(0xFF1B3D2F)
@@ -214,7 +257,7 @@ fun AddListingScreen(
                             }
                             Column(horizontalAlignment = Alignment.End) {
                                 Text("At Ugx ${"%,.0f".format(price)}/kg", fontSize = 12.sp, color = Color(0xFF2E7D32))
-                                Text("for $qty kg", fontSize = 12.sp, color = Color(0xFF2E7D32))
+                                Text("for ${qty.toInt()} kg", fontSize = 12.sp, color = Color(0xFF2E7D32))
                             }
                         }
                     }

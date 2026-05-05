@@ -43,7 +43,8 @@ import kotlinx.coroutines.launch
 import com.techproject.harvestlink.ui.screens.farmer.AddListingScreen
 import com.techproject.harvestlink.ui.screens.farmer.FarmerBrowseScreen
 import com.techproject.harvestlink.ui.screens.farmer.FarmerOrdersListScreen
-
+import com.techproject.harvestlink.data.SupabaseService
+import io.github.jan.supabase.auth.auth
 @Composable
 fun HarvestLinkApp() {
     val navController = rememberNavController()
@@ -178,7 +179,7 @@ fun MainScreen(
         }
         composable(route = "AddListingScreen") {
             AddListingScreen(
-                farmerId = "",        // replace with real farmer ID once auth is wired
+                farmerId = SupabaseService.client.auth.currentUserOrNull()?.id ?: "",
                 onBackClick = { navController.popBackStack() },
                 onListingAdded = { navController.popBackStack() }
             )

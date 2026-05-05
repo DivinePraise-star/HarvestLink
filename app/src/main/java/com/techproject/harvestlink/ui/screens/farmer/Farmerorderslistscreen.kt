@@ -18,24 +18,14 @@ import com.techproject.harvestlink.model.FarmerOrderRequest
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 @Composable
 fun FarmerOrdersListScreen(
-    onOrderRequestClick: (FarmerOrderRequest) -> Unit = {}
+    onOrderRequestClick: (FarmerOrderRequest) -> Unit = {},
+    viewModel: FarmerViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
-    var orderRequests by remember { mutableStateOf<List<FarmerOrderRequest>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
+    val uiState by viewModel.uiState.collectAsState()
+    val orderRequests = uiState.orderRequests
+    val isLoading = uiState.isLoading
+    val error = uiState.error
     var selectedTab by remember { mutableStateOf(0) }
-
-    LaunchedEffect(Unit) {
-        isLoading = true
-        error = null
-        try {
-            orderRequests = MoreData.fetchFarmerOrderRequests()
-        } catch (e: Exception) {
-            error = e.localizedMessage ?: "Failed to load orders"
-        } finally {
-            isLoading = false
-        }
-    }
 
     val newRequests = orderRequests.filter { !it.isResponded }
     val respondedRequests = orderRequests.filter { it.isResponded }

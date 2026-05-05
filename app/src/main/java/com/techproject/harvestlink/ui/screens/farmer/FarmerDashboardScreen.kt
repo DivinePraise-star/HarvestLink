@@ -21,9 +21,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.techproject.harvestlink.model.FarmerListing
 import com.techproject.harvestlink.model.FarmerOrderRequest
-import com.techproject.harvestlink.model.ListingStatus
+import com.techproject.harvestlink.model.Produce
 
 @Composable
 fun FarmerDashboardScreen(
@@ -38,9 +37,9 @@ fun FarmerDashboardScreen(
     val isLoading = uiState.isLoading
     val error = uiState.error
 
-    val activeListings = listings.count { it.status == ListingStatus.ACTIVE }
+    val activeListings = listings.count { it.availableQuantity > 0 }
     val pendingRequests = orderRequests.count { !it.isResponded }
-    val totalEarnings = listings.filter { it.status == ListingStatus.SOLD }.sumOf { it.pricePerUnit * it.quantitySold }
+    val totalEarnings = 0.0
 
     Column(
         modifier = Modifier
@@ -176,7 +175,7 @@ fun FarmerDashboardScreen(
                             )
                         }
                         Button(
-                            onClick = {onNewListingClick()},
+                            onClick = { onNewListingClick() },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color.White.copy(alpha = 0.15f)
                             ),
@@ -201,6 +200,7 @@ fun FarmerDashboardScreen(
             items(orderRequests) { request ->
                 OrderRequestCard(request = request, onClick = { onOrderRequestClick(request) })
             }
+
             item {
                 Text(
                     text = "My Listings",
@@ -265,7 +265,7 @@ fun OrderRequestCard(request: FarmerOrderRequest, onClick: () -> Unit) {
 }
 
 @Composable
-fun FarmerListingCard(listing: FarmerListing) {
+fun FarmerListingCard(listing: Produce) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -277,11 +277,14 @@ fun FarmerListingCard(listing: FarmerListing) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
-                modifier = Modifier.size(52.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFFFBF8F3)),
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFFFBF8F3)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = listing.produceName.first().toString(),
+                    text = listing.name.first().toString(),
                     fontWeight = FontWeight.Bold,
                     fontSize = 22.sp,
                     color = Color(0xFF1B3D2F)
@@ -289,32 +292,30 @@ fun FarmerListingCard(listing: FarmerListing) {
             }
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = listing.produceName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF1B3D2F))
                 Text(
-                    text = "${listing.quantityAvailable} kg · Ugx ${"%,d".format(listing.pricePerUnit.toInt())}/kg",
+                    text = listing.name,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = Color(0xFF1B3D2F)
+                )
+                Text(
+                    text = "${listing.availableQuantity.toInt()} kg · Ugx ${"%,d".format(listing.price.toInt())}/kg",
                     fontSize = 13.sp,
                     color = Color.Gray
                 )
             }
-            ListingStatusBadge(listing.status)
+            Surface(
+                color = if (listing.availableQuantity > 0) Color(0xFFE8F5E9) else Color(0xFFEEEEEE),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    text = if (listing.availableQuantity > 0) "ACTIVE" else "OUT",
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (listing.availableQuantity > 0) Color(0xFF2E7D32) else Color(0xFF616161)
+                )
+            }
         }
-    }
-}
-
-@Composable
-fun ListingStatusBadge(status: ListingStatus) {
-    val (bg, fg) = when (status) {
-        ListingStatus.ACTIVE -> Color(0xFFE8F5E9) to Color(0xFF2E7D32)
-        ListingStatus.PENDING -> Color(0xFFFFF3E0) to Color(0xFFE65100)
-        ListingStatus.SOLD -> Color(0xFFEEEEEE) to Color(0xFF616161)
-    }
-    Surface(color = bg, shape = RoundedCornerShape(8.dp)) {
-        Text(
-            text = status.name,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            color = fg
-        )
     }
 }

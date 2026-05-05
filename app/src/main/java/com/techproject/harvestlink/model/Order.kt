@@ -106,3 +106,16 @@ enum class OrderStatus(val text: String) {
 
 @Serializable
 enum class ListingStatus { ACTIVE, PENDING, SOLD }
+@Serializable
+data class ProduceInsert(
+    @SerialName("farmer_id") val farmerId: String,
+    val name: String,
+    val category: String,
+    val unit: String,
+    val description: String = "",
+    @SerialName("harvest_date") val harvestDate: String? = null,
+    @SerialName("image_url") val imageUrl: String? = null,
+    val price: Double,
+    @SerialName("available_quantity") val availableQuantity: Double,
+    val rating: Double = 0.0
+)
