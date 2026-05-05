@@ -16,7 +16,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
+import com.techproject.harvestlink.data.SupabaseService.client
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.exception.AuthRestException
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -116,9 +118,18 @@ fun ForgotPasswordScreen(
                         errorMessage = null
 
                         scope.launch {
-                            delay(1500)
-                            isLoading = false
-                            resetSent = true
+                            try {
+                                // Send password reset email via Supabase
+                                client.auth.resetPasswordForEmail(email)
+                                isLoading = false
+                                resetSent = true
+                            } catch (e: AuthRestException) {
+                                isLoading = false
+                                errorMessage = e.message ?: "Failed to send reset email"
+                            } catch (e: Exception) {
+                                isLoading = false
+                                errorMessage = "Network error. Please try again."
+                            }
                         }
                     },
                     modifier = Modifier

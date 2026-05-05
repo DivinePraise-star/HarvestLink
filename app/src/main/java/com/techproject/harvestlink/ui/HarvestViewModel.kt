@@ -20,6 +20,9 @@ import com.techproject.harvestlink.model.OrderStatus
 import com.techproject.harvestlink.model.Notification
 import com.techproject.harvestlink.model.NotificationType
 import kotlinx.coroutines.launch
+import com.techproject.harvestlink.data.SupabaseService.client
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.status.SessionStatus
 
 class HarvestViewModel(
     val chatRepository: ChatRepository,
@@ -43,6 +46,9 @@ class HarvestViewModel(
     // Data for Buyer Home
     var farmersList by mutableStateOf<List<Farmer>>(emptyList())
         private set
+    // Add this property to track current user
+    var currentUserId by mutableStateOf("")
+
     var activeOrdersCount by mutableStateOf(0)
         private set
 
@@ -65,6 +71,29 @@ class HarvestViewModel(
     init {
         loadProduce()
         seedSampleNotifications()
+        checkExistingSession()
+    }
+
+    private fun checkExistingSession() {
+        viewModelScope.launch {
+            sessionManager.sessionFlow.collect { session ->
+                if (session != null && homeUiState.beginner) {
+                    try {
+                        client.auth.importAuthToken(session.accessToken, session.refreshToken)
+                        currentUserId = session.userId  // ← SAVE THIS
+                        homeUiState = homeUiState.copy(
+                            beginner = false,
+                            isFarmer = session.role == "farmer"
+                        )
+                        if (session.role == "buyer") {
+                            loadBuyerData()
+                        }
+                    } catch (_: Exception) {
+                        sessionManager.clearSession()
+                    }
+                }
+            }
+        }
     }
 
     private fun seedSampleNotifications() {
@@ -112,16 +141,41 @@ class HarvestViewModel(
         if (!isFarmer) {
             loadBuyerData()
         }
+        // Save the current session
+        saveCurrentSession(isFarmer)
+    }
+
+    fun saveCurrentSession(isFarmer: Boolean) {
+        viewModelScope.launch {
+            try {
+                val status = client.auth.sessionStatus.value
+                if (status is SessionStatus.Authenticated) {
+                    val session = status.session
+                    val userId = session.user?.id ?: ""
+                    currentUserId = userId  // ← SAVE THIS
+                    sessionManager.saveSession(
+                        accessToken = session.accessToken,
+                        refreshToken = session.refreshToken,
+                        userId = userId,
+                        role = if (isFarmer) "farmer" else "buyer"
+                    )
+                }
+            } catch (_: Exception) { }
+        }
     }
 
     private fun loadBuyerData() {
         viewModelScope.launch {
             try {
+                // Fetch the SPECIFIC logged-in buyer, not buyers[0]
                 val buyers = MoreData.fetchBuyers()
-                if (buyers.isNotEmpty()) {
-                    buyerProfile = buyers[0]
-                    val allOrders = MoreData.fetchBuyerOrders("a752702b-bb48-4f46-b525-d8432bfd4520").groupBy { it.orderId }
-                    activeOrdersCount = allOrders.count() { it.value.any { order -> order.status != OrderStatus.cancelled } }
+                buyerProfile = buyers.find { it.id == currentUserId } ?: buyers.firstOrNull() ?: Buyer()
+
+                // Use the ACTUAL user ID for orders
+                val allOrders = MoreData.fetchBuyerOrders(currentUserId)
+                    .groupBy { it.orderId }
+                activeOrdersCount = allOrders.count {
+                    it.value.any { order -> order.status != OrderStatus.cancelled }
                 }
                 farmersList = MoreData.fetchFarmers()
             } catch (e: Exception) {
@@ -224,6 +278,16 @@ class HarvestViewModel(
     }
 
     fun logout() {
+        viewModelScope.launch {
+            try {
+                // Clear Supabase session
+                client.auth.signOut()
+            } catch (_: Exception) {
+                // Continue even if signOut fails
+            }
+            // Clear local session
+            sessionManager.clearSession()
+        }
         homeUiState = homeUiState.copy(
             beginner = true,
             authState = AuthState.SIGN_IN

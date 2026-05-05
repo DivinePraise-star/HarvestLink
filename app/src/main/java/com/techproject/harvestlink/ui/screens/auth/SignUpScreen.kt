@@ -23,15 +23,16 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.techproject.harvestlink.data.MoreData
+import com.techproject.harvestlink.ui.HarvestViewModel
 import io.github.jan.supabase.auth.exception.AuthRestException
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignUpScreen(
     onBackClick: () -> Unit,
-    onSignUpSuccess: (String) -> Unit // Pass user role
+    onSignUpSuccess: (String) -> Unit,
+    harvestViewModel: HarvestViewModel? = null
 ) {
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -202,6 +203,7 @@ fun SignUpScreen(
                                     )
                                     if (response != null) {
                                         isLoading = false
+                                        harvestViewModel?.saveCurrentSession(selectedRole == "farmer")
                                         onSignUpSuccess(selectedRole)
                                     }
                                 }catch (e: AuthRestException) {

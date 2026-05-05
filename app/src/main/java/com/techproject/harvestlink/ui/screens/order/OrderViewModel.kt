@@ -1,23 +1,27 @@
 package com.techproject.harvestlink.ui.screens.order
 
 import android.util.Log
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.techproject.harvestlink.data.MoreData
 import com.techproject.harvestlink.model.Order
+import com.techproject.harvestlink.model.OrderItem
+import com.techproject.harvestlink.model.OrderStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
-import androidx.lifecycle.viewModelScope
-import com.techproject.harvestlink.model.OrderItem
-import com.techproject.harvestlink.model.OrderStatus
 import kotlinx.coroutines.launch
 
-class OrderViewModel: ViewModel() {
+class OrderViewModel(
+    savedStateHandle: SavedStateHandle
+): ViewModel() {
+    private val userId: String = savedStateHandle.get<String>("userId") ?: ""
     private val _orderUiState = MutableStateFlow(OrderUiState())
     val orderUiState: StateFlow<OrderUiState> = _orderUiState
 
     init {
-        loadOrders("38c44748-e0b1-4da7-9d9c-cd392c2c495e")
+        loadOrders(userId)
     }
 
     fun toggleOrderDetails() {
@@ -72,10 +76,14 @@ class OrderViewModel: ViewModel() {
         }
     }
 
-    fun placeOrder(order:Order, orderItems: List<OrderItem>,onSuccess:(Long)-> Unit){
+    fun placeOrder(order: Order, orderItems: List<OrderItem>, onSuccess: (Long) -> Unit) {
         viewModelScope.launch {
-            val result = MoreData.placeOrder(order, orderItems)
-            onSuccess(result)
+            try {
+                val result = MoreData.placeOrder(order, orderItems)
+                onSuccess(result)
+            } catch (e: Exception) {
+                Log.e("OrderViewModel", "Error placing order", e)
+            }
         }
     }
 }

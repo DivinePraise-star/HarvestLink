@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.techproject.harvestlink.data.MoreData
+import io.github.jan.supabase.auth.exception.AuthRestException
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -212,14 +214,23 @@ fun SignInScreen(
 
                     // Simulate authentication
                     scope.launch {
-                        delay(1500)
-                        isLoading = false
-
-                        // For demo: any non-empty credentials work
-                        if (email == "farmer@test.com") {
-                            onSignInSuccess("farmer")
-                        } else {
+                        isLoading = true
+                        errorMessage = null
+                        try {
+                            MoreData.signIn(email, password)
+                            isLoading = false
+                            // Session is now active - HarvestViewModel.setRole() will save it
                             onSignInSuccess(selectedRole)
+                        } catch (e: AuthRestException) {
+                            isLoading = false
+                            errorMessage = when {
+                                e.message?.contains("Invalid login credentials", ignoreCase = true) == true ->
+                                    "Invalid email or password"
+                                else -> e.message ?: "Sign in failed"
+                            }
+                        } catch (e: Exception) {
+                            isLoading = false
+                            errorMessage = "Network error. Please try again."
                         }
                     }
                 },

@@ -45,6 +45,8 @@ fun AuthScreen(
                 onSignUpClick = { harvestViewModel.updateAuthState(AuthState.SIGN_UP) },
                 onGuestClick = {
                     userRole = "buyer"
+                    // Guest gets a temporary ID
+                    harvestViewModel.currentUserId = "guest_buyer"
                     harvestViewModel.updateAuthState(AuthState.AUTHENTICATED)
                 }
             )
@@ -67,7 +69,8 @@ fun AuthScreen(
                 onSignUpSuccess = { role ->
                     userRole = role
                     harvestViewModel.updateAuthState(AuthState.AUTHENTICATED)
-                }
+                },
+                harvestViewModel = harvestViewModel
             )
         }
 
