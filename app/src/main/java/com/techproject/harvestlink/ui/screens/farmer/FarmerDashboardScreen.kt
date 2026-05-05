@@ -28,6 +28,7 @@ import com.techproject.harvestlink.model.ListingStatus
 @Composable
 fun FarmerDashboardScreen(
     onOrderRequestClick: (FarmerOrderRequest) -> Unit = {},
+    onNewListingClick: () -> Unit = {},
     viewModel: FarmerViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -63,7 +64,7 @@ fun FarmerDashboardScreen(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "Kasese, Uganda",
+                    text = uiState.farmerLocation.ifBlank { "Uganda" },
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
                     color = Color(0xFF1B3D2F)
@@ -175,7 +176,7 @@ fun FarmerDashboardScreen(
                             )
                         }
                         Button(
-                            onClick = {},
+                            onClick = {onNewListingClick()},
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color.White.copy(alpha = 0.15f)
                             ),

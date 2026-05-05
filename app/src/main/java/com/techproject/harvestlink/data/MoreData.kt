@@ -59,7 +59,9 @@ object MoreData {
             e.printStackTrace()
         }
     }
-
+    suspend fun addFarmerListing(listing: FarmerListing) {
+        SupabaseService.client.from("farmer_listings").insert(listing)
+    }
     suspend fun deleteBuyer(id: String) {
         try {
             SupabaseService.client.from("users").delete {
@@ -86,22 +88,22 @@ object MoreData {
     }
 
     suspend fun fetchFarmerListings(farmerId: String? = null): List<FarmerListing> {
-        return if (farmerId == null) {
-            SupabaseService.client.from("farmer_listings").select().decodeList<FarmerListing>()
+        return if (farmerId != null) {
+            SupabaseService.client.from("farmer_listings")
+                .select { filter { eq("farmer_id", farmerId) } }
+                .decodeList()
         } else {
-            SupabaseService.client.from("farmer_listings").select {
-                filter { eq("farmer_id", farmerId) }
-            }.decodeList<FarmerListing>()
+            SupabaseService.client.from("farmer_listings").select().decodeList()
         }
     }
 
     suspend fun fetchFarmerOrderRequests(farmerId: String? = null): List<FarmerOrderRequest> {
-        return if (farmerId == null) {
-            SupabaseService.client.from("farmer_order_requests").select().decodeList<FarmerOrderRequest>()
+        return if (farmerId != null) {
+            SupabaseService.client.from("farmer_order_requests")
+                .select { filter { eq("farmer_id", farmerId) } }
+                .decodeList()
         } else {
-            SupabaseService.client.from("farmer_order_requests").select {
-                filter { eq("farmer_id", farmerId) }
-            }.decodeList<FarmerOrderRequest>()
+            SupabaseService.client.from("farmer_order_requests").select().decodeList()
         }
     }
 
@@ -116,7 +118,12 @@ object MoreData {
     suspend fun createOrderRequest(request: FarmerOrderRequest) {
         SupabaseService.client.from("farmer_order_requests").insert(request)
     }
-
+    suspend fun fetchFarmerById(farmerId: String): Farmer? {
+        return SupabaseService.client.from("farmers_list")
+            .select { filter { eq("id", farmerId) } }
+            .decodeList<Farmer>()
+            .firstOrNull()
+    }
     suspend fun placeOrder(order: Order, orderItems: List<OrderItem>): Long {
         val orderInsert = OrderInsert(
             orderDate = System.currentTimeMillis(),

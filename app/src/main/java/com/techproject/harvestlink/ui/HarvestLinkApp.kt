@@ -40,6 +40,9 @@ import com.techproject.harvestlink.ui.screens.home.ProduceDetailScreen
 import com.techproject.harvestlink.ui.screens.order.PlaceOrderScreen
 import com.techproject.harvestlink.ui.screens.order.TrackOrderScreen
 import kotlinx.coroutines.launch
+import com.techproject.harvestlink.ui.screens.farmer.AddListingScreen
+import com.techproject.harvestlink.ui.screens.farmer.FarmerBrowseScreen
+import com.techproject.harvestlink.ui.screens.farmer.FarmerOrdersListScreen
 
 @Composable
 fun HarvestLinkApp() {
@@ -89,6 +92,9 @@ fun MainScreen(
                     onOrderRequestClick = {
                         navController.navigate("FarmerOrderRequestScreen/${it.id}")
                         harvestViewModel.toggleNavBar()
+                    },
+                    onNewListingClick = {
+                        navController.navigate("AddListingScreen")
                     }
                 )
             }else{
@@ -106,12 +112,12 @@ fun MainScreen(
                 )
             }
         }
-        composable(route = AppDestinations.BROWSE.name){
-            if(harvestViewModel.homeUiState.isFarmer){
-                PlaceholderScreen("Welcome to Browse (Farmer)")
-            }else{
+        composable(route = AppDestinations.BROWSE.name) {
+            if (harvestViewModel.homeUiState.isFarmer) {
+                FarmerBrowseScreen()  // ← swap in
+            } else {
                 BrowseScreen(
-                    onProduceClick = { 
+                    onProduceClick = {
                         harvestViewModel.updateCurrentProduce(it)
                         navController.navigate("ProduceDetailScreen")
                     },
@@ -119,17 +125,17 @@ fun MainScreen(
                 )
             }
         }
-        composable(route = AppDestinations.ORDERS.name){
-            if(harvestViewModel.homeUiState.isFarmer){
-                FarmerDashboardScreen(
+        composable(route = AppDestinations.ORDERS.name) {
+            if (harvestViewModel.homeUiState.isFarmer) {
+                FarmerOrdersListScreen(  // ← swap in
                     onOrderRequestClick = {
                         navController.navigate("FarmerOrderRequestScreen/${it.id}")
                         harvestViewModel.toggleNavBar()
                     }
                 )
-            }else{ 
+            } else {
                 TrackOrderScreen(
-                    onContactFarmer = { 
+                    onContactFarmer = {
                         navController.navigate(AppDestinations.MESSAGES.name)
                     },
                     onReorder = { produceName ->
@@ -139,7 +145,7 @@ fun MainScreen(
                             navController.navigate("OrderRequestScreen")
                         }
                     }
-                ) 
+                )
             }
         }
         composable(route = AppDestinations.MESSAGES.name){
@@ -168,6 +174,13 @@ fun MainScreen(
                 harvestViewModel = harvestViewModel,
                 onDismiss = { navController.popBackStack() },
                 onApply = { navController.popBackStack() }
+            )
+        }
+        composable(route = "AddListingScreen") {
+            AddListingScreen(
+                farmerId = "",        // replace with real farmer ID once auth is wired
+                onBackClick = { navController.popBackStack() },
+                onListingAdded = { navController.popBackStack() }
             )
         }
         composable(route = "ProduceDetailScreen") {
