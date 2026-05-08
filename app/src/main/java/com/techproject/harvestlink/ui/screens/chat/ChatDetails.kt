@@ -105,35 +105,46 @@ fun ChatDetails(
         )}
     }
 
-    if(groupedMessages.isEmpty()){
+    if (messageUi.isLoading) {
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier.fillMaxSize()
         ) { CircularProgressIndicator() }
-    }else{
+    } else {
         Column(modifier = Modifier.fillMaxSize()) {
             ChatTopBar(
                 user = messageUi,
                 onClick = onClick
             )
-            Box(modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()) {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp),
-                    reverseLayout = true
-                ) {
-                    groupedMessages.forEach { (date,messagesInDate) ->
-                        items(messagesInDate) { message  ->
-                            MessageBubble(
-                                message = message,
-                                isMe = message.senderId == currentUserId
-                            )
-                        }
-                        item {
-                            DateHeader(date)
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                if (messageUi.messages.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("No Messages")
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp),
+                        reverseLayout = true
+                    ) {
+                        groupedMessages.forEach { (date, messagesInDate) ->
+                            items(messagesInDate) { message ->
+                                MessageBubble(
+                                    message = message,
+                                    isMe = message.senderId == currentUserId
+                                )
+                            }
+                            item {
+                                DateHeader(date)
+                            }
                         }
                     }
                 }

@@ -49,6 +49,7 @@ fun HomeScreen(
     val produceList = harvestViewModel.produceList
     val farmers = harvestViewModel.farmersList
     val activeOrdersCount = harvestViewModel.activeOrdersCount
+    val isAuthenticated = harvestViewModel.currentUserId.isNotBlank()
     
     // Total notifications = active orders + messages + general notifications
     val notificationCount = activeOrdersCount + unreadMessagesCount + harvestViewModel.notificationCount
@@ -111,22 +112,24 @@ fun HomeScreen(
                     color = Color(0xFF1B3D2F)
                 )
             }
-            IconButton(
-                onClick = onNavigateToNotifications,
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(Color.White, CircleShape)
-            ) {
-                BadgedBox(
-                    badge = {
-                        if (notificationCount > 0) {
-                            Badge {
-                                Text(notificationCount.toString())
+            if (isAuthenticated) {
+                IconButton(
+                    onClick = onNavigateToNotifications,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(Color.White, CircleShape)
+                ) {
+                    BadgedBox(
+                        badge = {
+                            if (notificationCount > 0) {
+                                Badge {
+                                    Text(notificationCount.toString())
+                                }
                             }
                         }
+                    ) {
+                        Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = Color.Black)
                     }
-                ) {
-                    Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = Color.Black)
                 }
             }
         }
@@ -156,31 +159,33 @@ fun HomeScreen(
 
             // Dashboard Summary Row
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Active Orders Summary
-                    Card(
-                        modifier = Modifier.weight(1f).clickable { onNavigateToOrders() },
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))
+                if (isAuthenticated) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(text = "Active Orders", fontSize = 12.sp, color = Color(0xFF2E7D32))
-                            Text(text = activeOrdersCount.toString(), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B3D2F))
+                        // Active Orders Summary
+                        Card(
+                            modifier = Modifier.weight(1f).clickable { onNavigateToOrders() },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(text = "Active Orders", fontSize = 12.sp, color = Color(0xFF2E7D32))
+                                Text(text = activeOrdersCount.toString(), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B3D2F))
+                            }
                         }
-                    }
 
-                    // Unread Messages Summary
-                    Card(
-                        modifier = Modifier.weight(1f).clickable { onNavigateToMessages() },
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(text = "Messages", fontSize = 12.sp, color = Color(0xFF1565C0))
-                            Text(text = unreadMessagesCount.toString(), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B3D2F))
+                        // Unread Messages Summary
+                        Card(
+                            modifier = Modifier.weight(1f).clickable { onNavigateToMessages() },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(text = "Messages", fontSize = 12.sp, color = Color(0xFF1565C0))
+                                Text(text = unreadMessagesCount.toString(), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B3D2F))
+                            }
                         }
                     }
                 }

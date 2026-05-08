@@ -44,10 +44,7 @@ fun AuthScreen(
                 onSignInClick = { harvestViewModel.updateAuthState(AuthState.SIGN_IN) },
                 onSignUpClick = { harvestViewModel.updateAuthState(AuthState.SIGN_UP) },
                 onGuestClick = {
-                    userRole = "buyer"
-                    // Guest gets a temporary ID
-                    harvestViewModel.currentUserId = "guest_buyer"
-                    harvestViewModel.updateAuthState(AuthState.AUTHENTICATED)
+                    harvestViewModel.enterGuestMode()
                 }
             )
         }
@@ -59,7 +56,8 @@ fun AuthScreen(
                     userRole = role
                     harvestViewModel.updateAuthState(AuthState.AUTHENTICATED)
                 },
-                onForgotPassword = { harvestViewModel.updateAuthState(AuthState.FORGOT_PASSWORD) }
+                onForgotPassword = { harvestViewModel.updateAuthState(AuthState.FORGOT_PASSWORD) },
+                navigateToSignUp = { harvestViewModel.updateAuthState(AuthState.SIGN_UP) }
             )
         }
 

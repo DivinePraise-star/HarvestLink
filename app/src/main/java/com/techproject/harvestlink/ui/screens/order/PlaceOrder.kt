@@ -72,7 +72,7 @@ fun PlaceOrderScreen(
     farmerId: String?,
     onSuccess: (Long) -> Unit,
 ) {
-    val orderViewModel: OrderViewModel = viewModel()
+    val orderViewModel: OrderViewModel = viewModel(factory = OrderViewModel.Factory)
     val homeUiState = harvestViewModel.homeUiState
     val orderItems = remember { mutableStateListOf<OrderItem>().apply { addAll(listOf(OrderItem(homeUiState.currentProduce ?: Produce(), 1))) } }
 

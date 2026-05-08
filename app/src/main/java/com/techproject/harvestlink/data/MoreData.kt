@@ -15,8 +15,11 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.user.UserInfo
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 
 object MoreData {
 
@@ -152,31 +155,25 @@ object MoreData {
         }.decodeList<OrderDetails>()
     }
 
-    suspend fun placeOrder(order: Order, orderItems: List<OrderItem>): Long {
-        val orderInsert = OrderInsert(
-            orderDate = System.currentTimeMillis(),
-            orderStatus = order.orderStatus.name.uppercase(),
-            deliveryAddress = order.deliveryAddress,
-            userId = order.buyerId,
-            farmerId = order.farmerId,
-        )
-
-        val response = SupabaseService.client.from("orders").insert(orderInsert) {
-            select()
-        }.decodeSingle<OrderIdResponse>()
-
-        val orderId = response.id
-
-        val itemsToInsert = orderItems.map {
-            OrderItemInsert(
-                orderId = orderId,
-                produceId = it.product.id,
-                quantity = it.quantity
-            )
+    suspend fun placeOrder(order: Order,orderItems: List<OrderItem>): Long{
+        val payload = buildJsonObject {
+            put("p_buyer_id", order.buyerId)
+            put("p_farmer_id", order.farmerId)
+            put("p_currency", order.currency)
+            put("p_subtotal", order.subtotal)
+            put("p_delivery_fee", order.deliveryFee)
+            put("p_total_amount", order.totalAmount)
+            putJsonArray("p_items") {
+                orderItems.forEach { item ->
+                    addJsonObject {
+                        put("produce_id", item.product.id)
+                        put("quantity", item.quantity.toDouble())
+                    }
+                }
+            }
         }
+        val result = SupabaseService.client.postgrest.rpc("create_order",payload)
 
-        SupabaseService.client.from("order_items").insert(itemsToInsert)
-
-        return orderId.toLong()
+        return result.decodeAs<Long>()
     }
 }

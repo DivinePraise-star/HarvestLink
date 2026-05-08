@@ -34,6 +34,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,6 +54,7 @@ import com.techproject.harvestlink.model.Farmer
 import com.techproject.harvestlink.ui.theme.HarvestLinkTheme
 import com.techproject.harvestlink.ui.ScreenHeader
 import com.techproject.harvestlink.ui.screens.AppDestinations
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -74,27 +76,36 @@ fun ChatList(
                     modifier = Modifier
                         .padding(12.dp)
                 )
-                if (conversation.isEmpty()) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) { CircularProgressIndicator() }
-                } else {
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(conversation) { each ->
-                            ChatItem(
-                                id = each.conversationId,
-                                userName = each.userName,
-                                lastMessage = each.lastMessage,
-                                time = SimpleDateFormat(
-                                    "h:mm a",
-                                    Locale.getDefault()
-                                ).format(Date(each.lastMessageTimestamp)),
-                                unreadCount = each.unreadCount ?: 0,
-                                onClick = {
-                                    navController.navigate("${AppDestinations.MESSAGES.name}/${each.conversationId}/${each.userId}")
-                                }
-                            )
+                when {
+                    chatListUiState.isLoadingConversations -> {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) { CircularProgressIndicator() }
+                    }
+                    conversation.isEmpty() -> {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) { Text("No Messages") }
+                    }
+                    else -> {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            items(conversation) { each ->
+                                ChatItem(
+                                    id = each.conversationId,
+                                    userName = each.userName,
+                                    lastMessage = each.lastMessage,
+                                    time = SimpleDateFormat(
+                                        "h:mm a",
+                                        Locale.getDefault()
+                                    ).format(Date(each.lastMessageTimestamp)),
+                                    unreadCount = each.unreadCount ?: 0,
+                                    onClick = {
+                                        navController.navigate("${AppDestinations.MESSAGES.name}/${each.conversationId}/${each.userId}")
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -119,7 +130,7 @@ fun ChatList(
             }
         }
     }else{
-        NewChat(chatListViewModel,chatListUiState)
+        NewChat(chatListViewModel,chatListUiState,navController)
     }
 }
 
@@ -127,11 +138,15 @@ fun ChatList(
 fun NewChat(
     chatListViewModel: ChatListViewModel,
     chatListUiState: ChatListUiState,
+    navController: NavController,
     modifier: Modifier = Modifier
 ) {
-    chatListViewModel.fetchFarmers()
+    LaunchedEffect(Unit) {
+        chatListViewModel.fetchFarmers()
+    }
     val farmerList = chatListUiState.farmers
     var searchText by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
 
     Column(modifier = modifier.fillMaxSize()) {
         BackHandler { chatListViewModel.toggleNewChat() }
@@ -140,58 +155,76 @@ fun NewChat(
             modifier = Modifier
                 .padding(12.dp)
         )
-        if (farmerList.isEmpty()) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.fillMaxSize()
-            ) { CircularProgressIndicator() }
-        } else {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                item {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 8.dp)
-                    ) {
-                        IconButton(
-                            onClick = { chatListViewModel.toggleNewChat() },
-                            colors = IconButtonDefaults.iconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                            ),
-                            modifier = Modifier
-                                .size(50.dp)
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.backbutton),
-                                contentDescription = stringResource(R.string.upButton),
-                                modifier = Modifier.padding(8.dp)
-                            )
-                        }
-                        OutlinedTextField(
-                            value = searchText,
-                            onValueChange = { searchText = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                                .padding(4.dp),
-                            placeholder = { Text("Search for a farmer...") },
-                            shape = RoundedCornerShape(dimensionResource(R.dimen.chatBoxBoarderRadius)),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer
-                            )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 8.dp)
+        ) {
+            IconButton(
+                onClick = { chatListViewModel.toggleNewChat() },
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                modifier = Modifier
+                    .size(50.dp)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.backbutton),
+                    contentDescription = stringResource(R.string.upButton),
+                    modifier = Modifier.padding(8.dp)
+                )
+            }
+            OutlinedTextField(
+                value = searchText,
+                onValueChange = { searchText = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(4.dp),
+                placeholder = { Text("Search for a farmer...") },
+                shape = RoundedCornerShape(dimensionResource(R.dimen.chatBoxBoarderRadius)),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer
+                )
 
+            )
+        }
+        when {
+            chatListUiState.isLoadingFarmers -> {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) { CircularProgressIndicator() }
+            }
+            farmerList.isEmpty() -> {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) { Text("No Farmers") }
+            }
+            else -> {
+                LazyColumn(modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)) {
+                    items(farmerList) { each ->
+                        NewChatItem(
+                            id = each.id,
+                            userName = each.name,
+                            onClick = {
+                                scope.launch {
+                                    val conversationId = chatListViewModel.getOrCreateConversation(each.id)
+                                    navController.navigate("${AppDestinations.MESSAGES.name}/$conversationId/${each.id}")
+                                }
+                            }
                         )
                     }
-                }
-                items(farmerList) { each ->
-                    NewChatItem(
-                        id = each.id,
-                        userName = each.name,
-                        onClick = {}
-                    )
                 }
             }
         }

@@ -21,24 +21,27 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.techproject.harvestlink.data.MoreData
+import com.techproject.harvestlink.data.SupabaseService.client
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.exception.AuthRestException
+import io.github.jan.supabase.auth.status.SessionStatus
+import kotlinx.serialization.json.jsonPrimitive
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignInScreen(
     onBackClick: () -> Unit,
     onSignInSuccess: (String) -> Unit, // Pass user type (buyer/farmer)
-    onForgotPassword: () -> Unit
+    onForgotPassword: () -> Unit,
+    navigateToSignUp: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var selectedRole by remember { mutableStateOf("buyer") } // "buyer" or "farmer"
     val scope = rememberCoroutineScope()
 
     Column(
@@ -87,38 +90,6 @@ fun SignInScreen(
             )
 
             Spacer(modifier = Modifier.height(40.dp))
-
-            // Role Selection
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                FilterChip(
-                    selected = selectedRole == "buyer",
-                    onClick = { selectedRole = "buyer" },
-                    label = { Text("Buyer") },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFF1B3D2F),
-                        selectedLabelColor = Color.White
-                    )
-                )
-
-                FilterChip(
-                    selected = selectedRole == "farmer",
-                    onClick = { selectedRole = "farmer" },
-                    label = { Text("Farmer") },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFF1B3D2F),
-                        selectedLabelColor = Color.White
-                    )
-                )
-            }
 
             // Email field
             OutlinedTextField(
@@ -218,9 +189,20 @@ fun SignInScreen(
                         errorMessage = null
                         try {
                             MoreData.signIn(email, password)
+                            val status = client.auth.sessionStatus.value
+                            val role = if (status is SessionStatus.Authenticated) {
+                                val session = status.session
+                                val metadata = session.user?.userMetadata
+                                metadata?.get("role")?.jsonPrimitive?.content
+                            } else {
+                                null
+                            }
                             isLoading = false
-                            // Session is now active - HarvestViewModel.setRole() will save it
-                            onSignInSuccess(selectedRole)
+                            if (role.isNullOrBlank()) {
+                                errorMessage = "Unable to determine user role"
+                            } else {
+                                onSignInSuccess(role)
+                            }
                         } catch (e: AuthRestException) {
                             isLoading = false
                             errorMessage = when {
@@ -268,7 +250,7 @@ fun SignInScreen(
                     color = Color.Gray
                 )
                 TextButton(
-                    onClick = { /* Navigate to sign up */ }
+                    onClick = navigateToSignUp
                 ) {
                     Text(
                         text = "Sign Up",

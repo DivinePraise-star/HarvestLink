@@ -55,7 +55,7 @@ fun TrackOrderScreen(
     onContactFarmer: (String) -> Unit = {},
     onReorder: (String) -> Unit = {}
 ){
-    val orderViewModel: OrderViewModel = viewModel()
+    val orderViewModel: OrderViewModel = viewModel(factory = OrderViewModel.Factory)
     val orderUIState = orderViewModel.orderUiState.collectAsState().value
 
     if(!orderUIState.showOrderDetails){
@@ -104,22 +104,31 @@ fun OrderList(
             modifier = Modifier
                 .padding(12.dp)
         )
-        if(orderUIState.orders.isEmpty()){
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.fillMaxSize()
-            ) { CircularProgressIndicator() }
-        }else{
-            LazyColumn {
-                orderUIState.orders.forEach { (order, details) ->
-                    item{
-                        OrderListItem(
-                            item = order,
-                            items = details,
-                            onClick = {
-                                orderViewModel.showOrderDetails(order)
-                            }
-                        )
+        when {
+            orderUIState.isLoading -> {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) { CircularProgressIndicator() }
+            }
+            orderUIState.orders.isEmpty() -> {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) { Text("No Orders") }
+            }
+            else -> {
+                LazyColumn {
+                    orderUIState.orders.forEach { (order, details) ->
+                        item {
+                            OrderListItem(
+                                item = order,
+                                items = details,
+                                onClick = {
+                                    orderViewModel.showOrderDetails(order)
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -319,7 +328,7 @@ fun OrderDetails(
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
-                            text = "Plot 123, Kampala Road, Kampala",
+                            text = order.deliveryAddress,
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface

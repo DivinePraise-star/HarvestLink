@@ -1,9 +1,14 @@
 package com.techproject.harvestlink.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -15,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -82,6 +88,8 @@ fun MainScreen(
     modifier: Modifier = Modifier
 ){
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val isAuthenticated = harvestViewModel.currentUserId.isNotBlank()
     NavHost(
         navController = navController,
         startDestination = AppDestinations.HOME.name,
@@ -127,7 +135,13 @@ fun MainScreen(
             }
         }
         composable(route = AppDestinations.ORDERS.name) {
-            if (harvestViewModel.homeUiState.isFarmer) {
+            if (!isAuthenticated) {
+                AuthRequiredScreen(
+                    title = "Orders",
+                    message = "Sign in to track and manage your orders.",
+                    onSignInClick = { harvestViewModel.requireAuthentication() }
+                )
+            } else if (harvestViewModel.homeUiState.isFarmer) {
                 FarmerOrdersListScreen(  // ← swap in
                     onOrderRequestClick = {
                         navController.navigate("FarmerOrderRequestScreen/${it.id}")
@@ -150,7 +164,15 @@ fun MainScreen(
             }
         }
         composable(route = AppDestinations.MESSAGES.name){
-            ChatList(navController)
+            if (!isAuthenticated) {
+                AuthRequiredScreen(
+                    title = "Messages",
+                    message = "Sign in to view and send messages.",
+                    onSignInClick = { harvestViewModel.requireAuthentication() }
+                )
+            } else {
+                ChatList(navController)
+            }
         }
         composable(
             route = "${AppDestinations.MESSAGES.name}/{conversationId}/{recipientId}",
@@ -163,12 +185,28 @@ fun MainScreen(
                 },
             )
         ){
-            ChatDetails(
-                onClick = {navController.popBackStack()}
-            )
+            if (!isAuthenticated) {
+                AuthRequiredScreen(
+                    title = "Messages",
+                    message = "Sign in to view and send messages.",
+                    onSignInClick = { harvestViewModel.requireAuthentication() }
+                )
+            } else {
+                ChatDetails(
+                    onClick = {navController.popBackStack()}
+                )
+            }
         }
         composable(route = AppDestinations.PROFILE.name){
-            ProfileScreen(harvestViewModel = harvestViewModel)
+            if (!isAuthenticated) {
+                AuthRequiredScreen(
+                    title = "Profile",
+                    message = "Sign in to manage your profile.",
+                    onSignInClick = { harvestViewModel.requireAuthentication() }
+                )
+            } else {
+                ProfileScreen(harvestViewModel = harvestViewModel)
+            }
         }
         composable(route = "FilterScreen") {
             FilterScreen (
@@ -198,13 +236,29 @@ fun MainScreen(
                         }
                     },
                     onMessage = {
-                        scope.launch {
-                            val conversationId = harvestViewModel.getOrCreateConversation(produce.farmerId)
-                            navController.navigate("${AppDestinations.MESSAGES.name}/$conversationId/${produce.farmerId}")
+                        if (!isAuthenticated) {
+                            Toast.makeText(
+                                context,
+                                "Please sign in or sign up to message farmers.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            scope.launch {
+                                val conversationId = harvestViewModel.getOrCreateConversation(produce.farmerId)
+                                navController.navigate("${AppDestinations.MESSAGES.name}/$conversationId/${produce.farmerId}")
+                            }
                         }
                     },
                     onRequest = {
-                        navController.navigate("PlaceOrderScreen/${produce.farmerId}")
+                        if (!isAuthenticated) {
+                            Toast.makeText(
+                                context,
+                                "Please sign in or sign up to request orders.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            navController.navigate("PlaceOrderScreen/${produce.farmerId}")
+                        }
                     }
                 )
             } else {
@@ -265,6 +319,30 @@ fun ScreenHeader(
         modifier = modifier
             .fillMaxWidth()
     )
+}
+
+@Composable
+fun AuthRequiredScreen(
+    title: String,
+    message: String,
+    onSignInClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(text = title, style = MaterialTheme.typography.headlineSmall)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = message, style = MaterialTheme.typography.bodyMedium)
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = onSignInClick) {
+                Text("Sign In or Sign Up")
+            }
+        }
+    }
 }
 
 @Composable

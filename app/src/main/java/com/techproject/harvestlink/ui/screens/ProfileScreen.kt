@@ -273,7 +273,8 @@ fun ProfileEditForm(
             onValueChange = onEmailChange,
             label = { Text("Email Address") },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
+            enabled = false
         )
         OutlinedTextField(
             value = phoneNumber,

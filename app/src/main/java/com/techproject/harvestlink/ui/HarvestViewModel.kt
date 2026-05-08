@@ -3,9 +3,11 @@ package com.techproject.harvestlink.ui
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -23,10 +25,12 @@ import kotlinx.coroutines.launch
 import com.techproject.harvestlink.data.SupabaseService.client
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.status.SessionStatus
+import kotlinx.serialization.json.jsonPrimitive
 
 class HarvestViewModel(
     val chatRepository: ChatRepository,
-    val sessionManager: SessionManager
+    val sessionManager: SessionManager,
+    val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     var filterUiState by mutableStateOf(FilterUiState())
         private set
@@ -81,6 +85,7 @@ class HarvestViewModel(
                     try {
                         client.auth.importAuthToken(session.accessToken, session.refreshToken)
                         currentUserId = session.userId  // ← SAVE THIS
+                        savedStateHandle["userId"] = session.userId
                         homeUiState = homeUiState.copy(
                             beginner = false,
                             isFarmer = session.role == "farmer"
@@ -151,6 +156,10 @@ class HarvestViewModel(
                 val status = client.auth.sessionStatus.value
                 if (status is SessionStatus.Authenticated) {
                     val session = status.session
+                    val metadata = session.user?.userMetadata
+
+                    val role = metadata?.get("role")?.jsonPrimitive?.content
+
                     val userId = session.user?.id ?: ""
                     currentUserId = userId  // ← SAVE THIS
                     sessionManager.saveSession(
@@ -277,6 +286,25 @@ class HarvestViewModel(
         homeUiState = homeUiState.copy(authState = state)
     }
 
+    fun enterGuestMode() {
+        currentUserId = ""
+        buyerProfile = Buyer(name = "Guest")
+        activeOrdersCount = 0
+        homeUiState = homeUiState.copy(
+            beginner = false,
+            isFarmer = false,
+            showNavBar = true,
+            authState = AuthState.SIGN_IN
+        )
+    }
+
+    fun requireAuthentication() {
+        homeUiState = homeUiState.copy(
+            beginner = true,
+            authState = AuthState.SIGN_IN
+        )
+    }
+
     fun logout() {
         viewModelScope.launch {
             try {
@@ -290,8 +318,10 @@ class HarvestViewModel(
         }
         homeUiState = homeUiState.copy(
             beginner = true,
-            authState = AuthState.SIGN_IN
+            authState = AuthState.SIGN_IN,
+            isFarmer = false
         )
+        currentUserId = ""
         buyerProfile = Buyer()
     }
 
@@ -316,7 +346,7 @@ class HarvestViewModel(
             initializer {
                 val app = (this[APPLICATION_KEY] as HarvestLinkApplication)
                 val chatRepo = app.container.repository
-                HarvestViewModel(chatRepo, app.sessionManager)
+                HarvestViewModel(chatRepo, app.sessionManager, this.createSavedStateHandle())
             }
         }
     }

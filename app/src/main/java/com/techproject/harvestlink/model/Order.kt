@@ -52,7 +52,7 @@ data class OrderDetails(
     @SerialName("order_id") val orderId: Int = 0,
     @SerialName("status") val status: OrderStatus = OrderStatus.pending,
     @SerialName("ordered_at") val orderedAt: Long = 0,
-    @SerialName("delivery_address") val deliveryAddress: String = "",
+    @SerialName("delivery_address") val deliveryAddress: String? = "",
     @SerialName("currency") val currency: String = "UGX",
     @SerialName("subtotal") val subtotal: Double = 0.0,
     @SerialName("delivery_fee") val deliveryFee: Double = 0.0,
