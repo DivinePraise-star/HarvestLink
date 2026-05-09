@@ -51,6 +51,7 @@ dependencies {
     implementation(libs.auth.kt)
     implementation(libs.storage.kt)
     implementation(libs.postgrest.kt)
+    implementation(libs.realtime.kt)
     implementation(libs.ktor.client.okhttp)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

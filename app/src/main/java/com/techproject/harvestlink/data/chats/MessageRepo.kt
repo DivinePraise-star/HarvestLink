@@ -1,5 +1,6 @@
 package com.techproject.harvestlink.data.chats
 
+import android.util.Log
 import com.techproject.harvestlink.data.SupabaseService.client
 import com.techproject.harvestlink.data.toEntity
 import com.techproject.harvestlink.data.toLocalEntity
@@ -9,12 +10,26 @@ import com.techproject.harvestlink.model.ConversationDetails
 import com.techproject.harvestlink.model.Message
 import com.techproject.harvestlink.model.MessageStatus
 import com.techproject.harvestlink.model.User
+import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.postgrest.rpc
+import io.github.jan.supabase.realtime.PostgresAction
+import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.postgresChangeFlow
+import io.github.jan.supabase.realtime.realtime
+import io.ktor.client.plugins.HttpRequestTimeoutException
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.io.IOException
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import java.util.UUID
+import kotlin.coroutines.cancellation.CancellationException
 
 class MessageRepo(
     private val chatDao: ChatDao
@@ -37,6 +52,41 @@ class MessageRepo(
                 phoneNumber = "",
                 isOnline = false
             )
+        }
+    }
+
+    override fun observeUserOnlineStatus(userId: String): Flow<Boolean> {
+
+        val channel = client.realtime.channel("user-status-$userId")
+
+        val statusFlow = channel.postgresChangeFlow<PostgresAction.Update>(
+            schema = "public"
+        ) {
+            table = "users"
+            filter(column = "id", operator = FilterOperator.EQ, value = userId)
+        }.map { action ->
+            action.record["is_online"]?.jsonPrimitive?.booleanOrNull ?: false
+        }
+
+        return statusFlow
+    }
+
+    override suspend fun markMessagesAsRead(conversationId: String,userId: String){
+        val payload = buildJsonObject {
+            put("p_user_id", userId)
+            put("p_conversation_id", conversationId)
+        }
+        try {
+            client.postgrest.rpc("mark_conversation_read", payload)
+        } catch (e: RestException) {
+            Log.e("SupabaseRPC", "Supabase RPC Error: ${e.message}")
+        } catch (e: HttpRequestTimeoutException) {
+            Log.w("SupabaseRPC", "Request timed out. Please try again.")
+        } catch (e: IOException) {
+            Log.e("SupabaseRPC", "Network unavailable. Check your connection.")
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            Log.e("SupabaseRPC", "Unexpected error: ${e.localizedMessage}")
         }
     }
 

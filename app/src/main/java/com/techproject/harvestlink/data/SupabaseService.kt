@@ -8,6 +8,7 @@ import io.github.jan.supabase.storage.Storage
 import io.github.jan.supabase.serializer.KotlinXSerializer
 import kotlinx.serialization.json.Json
 import com.techproject.harvestlink.BuildConfig
+import io.github.jan.supabase.realtime.Realtime
 
 object SupabaseService {
     private val SUPABASE_URL: String = BuildConfig.SUPABASE_URL
@@ -24,6 +25,7 @@ object SupabaseService {
                     isLenient = true
                 }
             )
+            install(Realtime)
             install(Postgrest)
             install(Auth)
             install(Storage)

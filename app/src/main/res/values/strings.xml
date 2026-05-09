@@ -14,4 +14,5 @@
     <string name="subtotal">Subtotal</string>
     <string name="delivery_fee">Delivery fee</string>
     <string name="add_another_product">Add Another Product</string>
+    <string name="delete_account">"            \n            This action is permanent and cannot be undone.\n            \n            If you continue, you will lose:\n            \n            • Your account and login access\n            • Your profile information\n            • All produce listings\n            • Order history and transaction records\n            • Saved delivery and payment information\n            \n            Any active listings associated with your account will also be removed.\n            \n            Are you sure you want to permanently delete your account?\n        "</string>
 </resources>

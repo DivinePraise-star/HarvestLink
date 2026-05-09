@@ -37,10 +37,12 @@ class ChatDetailsViewModel(
     val messagesUi: StateFlow<MessageUi> = _messagesUi
 
     init {
-        loadMessages(conversationId, recipientId)
         viewModelScope.launch {
             val session = sessionManager.sessionFlow.filterNotNull().first()
             currentUserId = session.userId
+
+            loadMessages(conversationId, recipientId)
+            observeRecipientOnlineStatus()
         }
     }
 
@@ -48,6 +50,7 @@ class ChatDetailsViewModel(
         viewModelScope.launch{
             _messagesUi.update { it.copy(isLoading = true) }
             try {
+                messageRepo.markMessagesAsRead(conversationId,currentUserId)
                 messageRepo.syncPendingMessages(conversationId)
                 val messages = messageRepo.getUsersMessages(conversationId)
                 val recipient = messageRepo.fetchUser(recipientId)
@@ -108,6 +111,19 @@ class ChatDetailsViewModel(
                 }
             } catch (e: Exception) {
                 Log.e("ChatDetailsViewModel", "Error sending message",e)
+            }
+        }
+    }
+
+    private fun observeRecipientOnlineStatus() {
+        viewModelScope.launch {
+            // Get initial online status (if needed)
+            val initialUser = messageRepo.fetchUser(recipientId)
+            _messagesUi.update { it.copy(isOnline = initialUser.isOnline) }
+
+            // Listen for changes
+            messageRepo.observeUserOnlineStatus(recipientId).collect { isOnline ->
+                _messagesUi.update { it.copy(isOnline = isOnline) }
             }
         }
     }

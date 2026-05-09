@@ -1,5 +1,6 @@
 package com.techproject.harvestlink.data
 
+import com.techproject.harvestlink.data.SupabaseService.client
 import com.techproject.harvestlink.model.Buyer
 import com.techproject.harvestlink.model.Farmer
 import com.techproject.harvestlink.model.FarmerOrderRequest
@@ -198,9 +199,10 @@ object MoreData {
 
     suspend fun deleteBuyer(id: String) {
         try {
-            SupabaseService.client.from("users").delete {
-                filter { eq("id", id) }
+            val payload = buildJsonObject {
+                put("p_user_id", id)
             }
+            SupabaseService.client.postgrest.rpc("delete_all_data", payload)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -239,5 +241,13 @@ object MoreData {
         }
         val result = SupabaseService.client.postgrest.rpc("create_order", payload)
         return result.decodeAs<Long>()
+    }
+
+    // ─── Messages ───────────────────────────────────────────────────────────────
+    suspend fun markMessagesAsDelivered(userId: String){
+        val payload = buildJsonObject {
+            put("p_user_id", userId)
+        }
+        client.postgrest.rpc("mark_all_messages_delivered",payload)
     }
 }

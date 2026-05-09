@@ -226,7 +226,7 @@ class HarvestViewModel(
     }
 
     fun deleteAccount(onDeleted: () -> Unit) {
-        val id = buyerProfile?.id ?: return
+        val id = currentUserId
         viewModelScope.launch {
             try {
                 MoreData.deleteBuyer(id)

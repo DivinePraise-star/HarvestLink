@@ -19,9 +19,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.techproject.harvestlink.R
 import com.techproject.harvestlink.ui.HarvestViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -217,7 +219,11 @@ fun ProfileScreen(
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = { Text("Delete Account?") },
-            text = { Text("This action cannot be undone. All your data will be permanently removed.") },
+            text = {
+                Text(
+                    text = stringResource(R.string.delete_account).trimIndent()
+                )
+            },
             confirmButton = {
                 TextButton(
                     onClick = {

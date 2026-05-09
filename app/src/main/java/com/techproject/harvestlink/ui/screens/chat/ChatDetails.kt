@@ -220,15 +220,17 @@ fun ChatTopBar(
                         .background(MaterialTheme.colorScheme.primaryContainer)
                         .padding(8.dp)
                 )
-                Box(
-                    modifier = Modifier
-                        .size(16.dp)
-                        .align(Alignment.BottomEnd)
-                        .offset((-2).dp, (-2).dp) // slight inward shift
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.onPrimaryContainer) // green
-                        .border(2.dp, Color.White, CircleShape) // white ring
-                )
+                if (user.isOnline){
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .align(Alignment.BottomEnd)
+                            .offset((-2).dp, (-2).dp) // slight inward shift
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.onPrimaryContainer) // green
+                            .border(2.dp, Color.White, CircleShape) // white ring
+                    )
+                }
             }
             Column(
                 modifier = Modifier.padding(start =8.dp)
@@ -237,7 +239,6 @@ fun ChatTopBar(
                     text = user.recipientName ?: "Unknown",
                     style = MaterialTheme.typography.titleLarge
                 )
-                Text(text = "Online")
             }
 
         }
