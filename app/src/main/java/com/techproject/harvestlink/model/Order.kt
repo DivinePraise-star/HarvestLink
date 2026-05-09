@@ -97,6 +97,17 @@ data class FarmerOrderRequest(
 )
 
 @Serializable
+data class FarmerOrderRequestInsert(
+    @SerialName("buyer_name") val buyerName: String,
+    @SerialName("buyer_location") val buyerLocation: String,
+    @SerialName("produce_name") val produceName: String,
+    val quantity: Int,
+    @SerialName("offered_price_per_kg") val offeredPricePerKg: Int,
+    @SerialName("buyer_note") val buyerNote: String,
+    @SerialName("request_date") val requestDate: String,
+    @SerialName("is_responded") val isResponded: Boolean = false
+)
+@Serializable
 enum class OrderStatus(val text: String) {
     delivered(text = "Delivered"),
     in_transit(text = "In Transit"),

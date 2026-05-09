@@ -16,7 +16,7 @@ import com.techproject.harvestlink.data.chats.ChatDao
 		ConversationCacheEntity::class,
 		MessageEntity::class
 	],
-	version = 2,
+	version = 3,
 	exportSchema = true
 )
 abstract class HarvestDatabase : RoomDatabase() {
@@ -34,7 +34,7 @@ abstract class HarvestDatabase : RoomDatabase() {
 					HarvestDatabase::class.java,
 					"harvestlink_database"
 				)
-					.fallbackToDestructiveMigration(false)
+					.fallbackToDestructiveMigration(true)
 					.build()
 					.also { Instance = it }
 			}

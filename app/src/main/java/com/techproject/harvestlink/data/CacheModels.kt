@@ -49,7 +49,7 @@ data class ProduceEntity(
     @ColumnInfo(name = "available_quantity") val availableQuantity: Double,
     val rating: Double,
     val description: String,
-    @ColumnInfo(name = "harvest_date") val harvestDate: String,
+    @ColumnInfo(name = "harvest_date") val harvestDate: String?,
     @ColumnInfo(name = "farmer_id") val farmerId: String,
     @ColumnInfo(name = "image_url") val imageUrl: String?,
     val category: String

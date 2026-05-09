@@ -131,12 +131,14 @@ fun ProduceDetailScreen(
                     color = Color.Gray,
                     lineHeight = 20.sp
                 )
-                Text(
-                    text = "Harvested: ${produce.harvestDate}",
-                    color = Color.Gray,
-                    fontSize = 14.sp,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
+                if (!produce.harvestDate.isNullOrBlank()) {
+                    Text(
+                        text = "Harvested: ${produce.harvestDate}",
+                        color = Color.Gray,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(24.dp))
 

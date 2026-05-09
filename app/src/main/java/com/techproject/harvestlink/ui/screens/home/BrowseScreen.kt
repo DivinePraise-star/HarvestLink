@@ -221,7 +221,7 @@ fun ProduceCard(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                if(produce.imageUrl != null){
+                if(!produce.imageUrl.isNullOrBlank()){
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(produce.imageUrl)

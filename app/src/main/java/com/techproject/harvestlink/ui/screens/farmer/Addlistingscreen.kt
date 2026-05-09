@@ -1,6 +1,11 @@
 package com.techproject.harvestlink.ui.screens.farmer
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -9,20 +14,28 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
 import com.techproject.harvestlink.data.MoreData
 import com.techproject.harvestlink.model.Produce
+import java.util.UUID
 
 private val categories = listOf("Vegetables", "Fruits", "Grains", "Legumes", "Tubers", "Other")
+private val units = listOf("kg", "g", "tonne", "bunch", "crate", "bag", "litre")
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddListingScreen(
@@ -34,7 +47,20 @@ fun AddListingScreen(
     var quantityAvailable by remember { mutableStateOf("") }
     var pricePerUnit by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("") }
+    var unit by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+    var harvestDate by remember { mutableStateOf("") }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    val context = LocalContext.current
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        selectedImageUri = uri
+    }
+
     var categoryExpanded by remember { mutableStateOf(false) }
+    var unitExpanded by remember { mutableStateOf(false) }
 
     var isSubmitting by remember { mutableStateOf(false) }
     var submitError by remember { mutableStateOf<String?>(null) }
@@ -44,8 +70,11 @@ fun AddListingScreen(
     val quantityError = quantityAvailable.isNotBlank() && quantityAvailable.toDoubleOrNull() == null
     val priceError = pricePerUnit.isNotBlank() && pricePerUnit.toDoubleOrNull() == null
 
+    // All non-null fields without defaults must be filled
     val formValid = produceName.isNotBlank() &&
+            !nameError &&
             category.isNotBlank() &&
+            unit.isNotBlank() &&
             quantityAvailable.toDoubleOrNull() != null &&
             pricePerUnit.toDoubleOrNull() != null &&
             !isSubmitting
@@ -64,22 +93,32 @@ fun AddListingScreen(
         )
     }
 
-    // Submission coroutine
     if (isSubmitting) {
         LaunchedEffect(Unit) {
             try {
+                var finalImageUrl: String? = null
+                
+                selectedImageUri?.let { uri ->
+                    val inputStream = context.contentResolver.openInputStream(uri)
+                    val bytes = inputStream?.readBytes()
+                    if (bytes != null) {
+                        val fileName = "${UUID.randomUUID()}.jpg"
+                        finalImageUrl = MoreData.uploadProduceImage(fileName, bytes)
+                    }
+                }
+
                 val newProduce = Produce(
                     id = "",
                     farmerId = farmerId,
                     name = produceName.trim(),
                     price = pricePerUnit.toDouble(),
                     availableQuantity = quantityAvailable.toDouble(),
-                    unit = "kg",
-                    category = category,        // ✅ now correctly passed
+                    unit = unit,
+                    category = category,
                     farmerName = "",
-                    description = "",
-                    harvestDate = "",
-                    imageUrl = null,
+                    description = description.trim(),
+                    harvestDate = harvestDate.trim().ifBlank { null },
+                    imageUrl = finalImageUrl,
                     rating = 0.0
                 )
                 MoreData.addFarmerListing(newProduce)
@@ -158,16 +197,63 @@ fun AddListingScreen(
                     color = Color(0xFF1B3D2F)
                 )
 
+                // Image Picker
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.White)
+                        .clickable { imagePicker.launch("image/*") },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (selectedImageUri != null) {
+                        AsyncImage(
+                            model = selectedImageUri,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                        Box(
+                            modifier = Modifier
+                                .padding(8.dp)
+                                .align(Alignment.TopEnd)
+                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                                .clickable { selectedImageUri = null }
+                                .padding(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AddAPhoto,
+                                contentDescription = "Change",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    } else {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Default.AddAPhoto,
+                                contentDescription = null,
+                                tint = Color.Gray,
+                                modifier = Modifier.size(32.dp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("Add produce photo", color = Color.Gray, fontSize = 14.sp)
+                        }
+                    }
+                }
+
                 // Produce name
                 ListingTextField(
                     value = produceName,
                     onValueChange = { produceName = it },
-                    label = "Produce name",
+                    label = "Produce name *",
                     placeholder = "e.g. Tomatoes",
                     isError = nameError,
                     errorMessage = "Name must be at least 2 characters"
                 )
 
+                // Category dropdown
                 ExposedDropdownMenuBox(
                     expanded = categoryExpanded,
                     onExpandedChange = { categoryExpanded = !categoryExpanded }
@@ -176,13 +262,11 @@ fun AddListingScreen(
                         value = category,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Category") },
+                        label = { Text("Category *") },
                         trailingIcon = {
                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded)
                         },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(),
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = Color(0xFF1B3D2F),
@@ -204,7 +288,42 @@ fun AddListingScreen(
                     }
                 }
 
-                // Quantity and price
+                // Unit dropdown
+                ExposedDropdownMenuBox(
+                    expanded = unitExpanded,
+                    onExpandedChange = { unitExpanded = !unitExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = unit,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Unit *") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = unitExpanded)
+                        },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF1B3D2F),
+                            unfocusedBorderColor = Color.LightGray,
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White
+                        )
+                    )
+                    ExposedDropdownMenu(
+                        expanded = unitExpanded,
+                        onDismissRequest = { unitExpanded = false }
+                    ) {
+                        units.forEach { u ->
+                            DropdownMenuItem(
+                                text = { Text(u) },
+                                onClick = { unit = u; unitExpanded = false }
+                            )
+                        }
+                    }
+                }
+
+                // Quantity and price side by side
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -212,7 +331,7 @@ fun AddListingScreen(
                     ListingTextField(
                         value = quantityAvailable,
                         onValueChange = { quantityAvailable = it },
-                        label = "Quantity (kg)",
+                        label = "Quantity *",
                         placeholder = "e.g. 500",
                         keyboardType = KeyboardType.Number,
                         isError = quantityError,
@@ -222,7 +341,7 @@ fun AddListingScreen(
                     ListingTextField(
                         value = pricePerUnit,
                         onValueChange = { pricePerUnit = it },
-                        label = "Price/kg (Ugx)",
+                        label = "Price (Ugx) *",
                         placeholder = "e.g. 2000",
                         keyboardType = KeyboardType.Number,
                         isError = priceError,
@@ -231,7 +350,33 @@ fun AddListingScreen(
                     )
                 }
 
-                // Live total value card
+                // Description
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Description") },
+                    placeholder = { Text("Quality, storage notes, anything buyers should know", fontSize = 13.sp) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    minLines = 3,
+                    maxLines = 5,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF1B3D2F),
+                        unfocusedBorderColor = Color.LightGray,
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
+                    )
+                )
+
+                // Harvest date
+                ListingTextField(
+                    value = harvestDate,
+                    onValueChange = { harvestDate = it },
+                    label = "Harvest date (optional)",
+                    placeholder = "e.g. 2025-06-01"
+                )
+
+                // Live total value — appears once required fields are valid
                 if (formValid) {
                     val qty = quantityAvailable.toDoubleOrNull() ?: 0.0
                     val price = pricePerUnit.toDoubleOrNull() ?: 0.0
@@ -241,9 +386,7 @@ fun AddListingScreen(
                         colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))
                     ) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column {
@@ -256,8 +399,8 @@ fun AddListingScreen(
                                 )
                             }
                             Column(horizontalAlignment = Alignment.End) {
-                                Text("At Ugx ${"%,.0f".format(price)}/kg", fontSize = 12.sp, color = Color(0xFF2E7D32))
-                                Text("for ${qty.toInt()} kg", fontSize = 12.sp, color = Color(0xFF2E7D32))
+                                Text("At Ugx ${"%,.0f".format(price)}/${unit.ifBlank { "unit" }}", fontSize = 12.sp, color = Color(0xFF2E7D32))
+                                Text("for ${qty.toInt()} ${unit.ifBlank { "units" }}", fontSize = 12.sp, color = Color(0xFF2E7D32))
                             }
                         }
                     }
@@ -267,14 +410,19 @@ fun AddListingScreen(
                     Text(text = submitError!!, color = Color.Red, fontSize = 13.sp)
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                // Required fields note
+                Text(
+                    text = "* Required fields",
+                    fontSize = 11.sp,
+                    color = Color.Gray
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
 
                 Button(
                     onClick = { isSubmitting = true; submitError = null },
                     enabled = formValid,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(54.dp),
+                    modifier = Modifier.fillMaxWidth().height(54.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF1B3D2F),

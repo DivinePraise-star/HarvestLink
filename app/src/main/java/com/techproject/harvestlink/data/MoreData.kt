@@ -3,6 +3,7 @@ package com.techproject.harvestlink.data
 import com.techproject.harvestlink.model.Buyer
 import com.techproject.harvestlink.model.Farmer
 import com.techproject.harvestlink.model.FarmerOrderRequest
+import com.techproject.harvestlink.model.FarmerOrderRequestInsert
 import com.techproject.harvestlink.model.Order
 import com.techproject.harvestlink.model.OrderDetails
 import com.techproject.harvestlink.model.OrderIdResponse
@@ -16,6 +17,7 @@ import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.user.UserInfo
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.storage.storage
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -109,6 +111,7 @@ object MoreData {
         }
     }
 
+    // Returns this farmer's own listings from the produce table, filtered by their ID
     suspend fun fetchFarmerListings(farmerId: String? = null): List<Produce> {
         return if (farmerId != null) {
             SupabaseService.client.from("produce")
@@ -119,7 +122,8 @@ object MoreData {
         }
     }
 
-    // Uses ProduceInsert to avoid sending farmerName which doesn't exist in the table
+    // Uses ProduceInsert to only send columns that exist in the produce table
+    // (avoids sending farmerName which is a view-only field not in the base table)
     suspend fun addFarmerListing(produce: Produce) {
         val insert = ProduceInsert(
             farmerId = produce.farmerId,
@@ -127,7 +131,7 @@ object MoreData {
             category = produce.category,
             unit = produce.unit,
             description = produce.description.ifBlank { "" },
-            harvestDate = produce.harvestDate.ifBlank { null },
+            harvestDate = produce.harvestDate?.ifBlank { null },
             imageUrl = produce.imageUrl,
             price = produce.price,
             availableQuantity = produce.availableQuantity,
@@ -136,21 +140,38 @@ object MoreData {
         SupabaseService.client.from("produce").insert(insert)
     }
 
-    // ─── Order Requests ───────────────────────────────────────────────────────
-
-    suspend fun fetchFarmerOrderRequests(farmerId: String? = null): List<FarmerOrderRequest> {
-        return if (farmerId != null) {
-            SupabaseService.client.from("farmer_order_requests")
-                .select { filter { eq("farmer_id", farmerId) } }
-                .decodeList<FarmerOrderRequest>()
-        } else {
-            SupabaseService.client.from("farmer_order_requests").select()
-                .decodeList<FarmerOrderRequest>()
+    suspend fun uploadProduceImage(fileName: String, bytes: ByteArray): String? {
+        return try {
+            val bucket = SupabaseService.client.storage.from("produce-images")
+            bucket.upload(fileName, bytes) {
+                upsert = true
+            }
+            bucket.publicUrl(fileName)
+        } catch (e: Exception) {
+            null
         }
     }
 
+    // ─── Order Requests ───────────────────────────────────────────────────────
+
+    suspend fun fetchFarmerOrderRequests(farmerId: String? = null): List<FarmerOrderRequest> {
+        // Return an empty list for now until the farmer_id column is added to the database table.
+        // This avoids showing every farmer all requests.
+        return emptyList()
+    }
+
     suspend fun createOrderRequest(request: FarmerOrderRequest) {
-        SupabaseService.client.from("farmer_order_requests").insert(request)
+        val insert = FarmerOrderRequestInsert(
+            buyerName = request.buyerName,
+            buyerLocation = request.buyerLocation,
+            produceName = request.produceName,
+            quantity = request.quantity,
+            offeredPricePerKg = request.offeredPricePerKg,
+            buyerNote = request.buyerNote,
+            requestDate = request.requestDate,
+            isResponded = request.isResponded
+        )
+        SupabaseService.client.from("farmer_order_requests").insert(insert)
     }
 
     // ─── Buyers ───────────────────────────────────────────────────────────────
@@ -199,7 +220,7 @@ object MoreData {
         }
     }
 
-    suspend fun placeOrder(order: Order,orderItems: List<OrderItem>): Long{
+    suspend fun placeOrder(order: Order, orderItems: List<OrderItem>): Long {
         val payload = buildJsonObject {
             put("p_buyer_id", order.buyerId)
             put("p_farmer_id", order.farmerId)
@@ -216,8 +237,7 @@ object MoreData {
                 }
             }
         }
-        val result = SupabaseService.client.postgrest.rpc("create_order",payload)
-
+        val result = SupabaseService.client.postgrest.rpc("create_order", payload)
         return result.decodeAs<Long>()
     }
 }

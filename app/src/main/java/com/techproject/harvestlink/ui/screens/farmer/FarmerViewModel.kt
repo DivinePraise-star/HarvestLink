@@ -37,8 +37,14 @@ class FarmerViewModel : ViewModel() {
                 val currentUser = SupabaseService.client.auth.currentUserOrNull()
                 val farmerId = currentUser?.id
 
-                //val listings = MoreData.fetchFarmerListings(farmerId)
-                //val requests = MoreData.fetchFarmerOrderRequests(farmerId)
+                val listings = MoreData.fetchFarmerListings(farmerId)
+                
+                // Fetch requests safely. If the table is broken, we at least show listings.
+                val requests = try {
+                    MoreData.fetchFarmerOrderRequests(farmerId)
+                } catch (e: Exception) {
+                    emptyList()
+                }
 
                 val farmerProfile = if (farmerId != null) {
                     MoreData.fetchFarmerById(farmerId)
@@ -46,8 +52,8 @@ class FarmerViewModel : ViewModel() {
 
                 _uiState.update {
                     it.copy(
-                        listings = emptyList(),
-                        orderRequests = emptyList(),
+                        listings = listings,
+                        orderRequests = requests,
                         farmerName = farmerProfile?.name ?: "Farmer",
                         farmerLocation = farmerProfile?.location ?: "",
                         isLoading = false

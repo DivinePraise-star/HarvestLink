@@ -52,11 +52,16 @@ import com.techproject.harvestlink.ui.theme.HarvestLinkTheme
 
 @Composable
 fun TrackOrderScreen(
+    isFarmer: Boolean = false,
     onContactFarmer: (String) -> Unit = {},
     onReorder: (String) -> Unit = {}
 ){
     val orderViewModel: OrderViewModel = viewModel(factory = OrderViewModel.Factory)
     val orderUIState = orderViewModel.orderUiState.collectAsState().value
+
+    androidx.compose.runtime.LaunchedEffect(isFarmer) {
+        orderViewModel.loadOrders(isFarmer)
+    }
 
     if(!orderUIState.showOrderDetails){
         OrderList(

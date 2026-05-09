@@ -109,11 +109,19 @@ fun FarmerOrdersListScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = if (selectedTab == 0) "No new requests" else "No responded requests yet",
-                            color = Color.Gray,
-                            fontSize = 14.sp
-                        )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = if (selectedTab == 0) "No new requests" else "No responded requests yet",
+                                color = Color.Gray,
+                                fontSize = 14.sp
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = " ",
+                                color = Color.Gray.copy(alpha = 0.6f),
+                                fontSize = 12.sp
+                            )
+                        }
                     }
                 } else {
                     LazyColumn(

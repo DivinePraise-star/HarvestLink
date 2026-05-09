@@ -17,6 +17,7 @@ import com.techproject.harvestlink.data.SessionManager
 import com.techproject.harvestlink.data.chats.ChatRepository
 import com.techproject.harvestlink.model.Buyer
 import com.techproject.harvestlink.model.Farmer
+import com.techproject.harvestlink.model.FarmerOrderRequest
 import com.techproject.harvestlink.model.Produce
 import com.techproject.harvestlink.model.OrderStatus
 import com.techproject.harvestlink.model.Notification
@@ -339,6 +340,16 @@ class HarvestViewModel(
 
     suspend fun getOrCreateConversation(userId: String): String{
         return chatRepository.getOrCreateConversation(buyerProfile.id,userId)
+    }
+
+    fun submitOrderRequest(request: FarmerOrderRequest) {
+        viewModelScope.launch {
+            try {
+                MoreData.createOrderRequest(request)
+            } catch (e: Exception) {
+                // Handle error
+            }
+        }
     }
 
     companion object{

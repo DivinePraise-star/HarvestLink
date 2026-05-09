@@ -21,6 +21,7 @@ ksp = "2.2.0-2.0.2"
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
 auth-kt = { module = "io.github.jan-tennert.supabase:auth-kt" }
 supabase-kt = { group = "io.github.jan-tennert.supabase", name = "supabase-kt", version.ref = "supabaseKotlin" }
+storage-kt = { group = "io.github.jan-tennert.supabase", name = "storage-kt", version.ref = "supabaseKotlin" }
 postgrest-kt = { group = "io.github.jan-tennert.supabase", name = "postgrest-kt", version.ref = "supabaseKotlin" }
 ktor-client-okhttp = { group = "io.ktor", name = "ktor-client-okhttp", version.ref = "ktor" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

@@ -137,9 +137,10 @@ fun OrderRequestScreen(
                     offeredPricePerKg = produce.price.toInt(),
                     buyerNote = notes,
                     requestDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()),
-                    isResponded = false
+                    isResponded = false,
+                    farmerId = produce.farmerId
                 )
-                //harvestViewModel.submitOrderRequest(orderRequest)
+                harvestViewModel.submitOrderRequest(orderRequest)
                 onOrderSubmitted() 
             },
             modifier = Modifier.fillMaxWidth().height(56.dp),

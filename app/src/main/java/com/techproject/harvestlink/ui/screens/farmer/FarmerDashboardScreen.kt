@@ -18,9 +18,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.techproject.harvestlink.R
 import com.techproject.harvestlink.model.FarmerOrderRequest
 import com.techproject.harvestlink.model.Produce
 
@@ -283,12 +289,25 @@ fun FarmerListingCard(listing: Produce) {
                     .background(Color(0xFFFBF8F3)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = listing.name.first().toString(),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp,
-                    color = Color(0xFF1B3D2F)
-                )
+                if (!listing.imageUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(listing.imageUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        error = painterResource(R.drawable.placeholder),
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Text(
+                        text = listing.name.first().toString(),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp,
+                        color = Color(0xFF1B3D2F)
+                    )
+                }
             }
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {

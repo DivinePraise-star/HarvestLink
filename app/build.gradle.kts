@@ -49,6 +49,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.supabase.kt)
     implementation(libs.auth.kt)
+    implementation(libs.storage.kt)
     implementation(libs.postgrest.kt)
     implementation(libs.ktor.client.okhttp)
     implementation(libs.androidx.lifecycle.runtime.ktx)

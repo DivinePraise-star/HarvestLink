@@ -150,6 +150,7 @@ fun MainScreen(
                 )
             } else {
                 TrackOrderScreen(
+                    isFarmer = false,
                     onContactFarmer = {
                         navController.navigate(AppDestinations.MESSAGES.name)
                     },

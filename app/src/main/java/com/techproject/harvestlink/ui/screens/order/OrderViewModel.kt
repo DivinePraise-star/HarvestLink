@@ -47,9 +47,15 @@ class OrderViewModel(
         }
     }
 
-    fun loadOrders() {
+    fun loadOrders(isFarmer: Boolean = false) {
         viewModelScope.launch {
             _orderUiState.update { it.copy(isLoading = true) }
+            if (isFarmer) {
+                // For farmers, the Orders page (TrackOrderScreen) should be empty
+                // as they use FarmerOrdersListScreen for requests.
+                _orderUiState.update { it.copy(orders = emptyMap(), isLoading = false) }
+                return@launch
+            }
             try {
                 val session = sessionManager.sessionFlow.filterNotNull().first()
                 val userId = session.userId

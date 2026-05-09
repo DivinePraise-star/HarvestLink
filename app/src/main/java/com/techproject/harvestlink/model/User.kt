@@ -59,7 +59,7 @@ data class Produce(
     @SerialName("available_quantity") val availableQuantity: Double = 0.0,
     val rating: Double = 0.0,
     val description: String = "",
-    @SerialName("harvest_date") val harvestDate: String = "",
+    @SerialName("harvest_date") val harvestDate: String? = null,
     @SerialName("farmer_id") val farmerId: String = "",
     @SerialName("image_url")val imageUrl: String? = null,
     val category: String = ""
