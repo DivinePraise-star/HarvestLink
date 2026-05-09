@@ -37,7 +37,7 @@ class ChatDetailsViewModel(
     val messagesUi: StateFlow<MessageUi> = _messagesUi
 
     init {
-        loadMessages(conversationId,recipientId)
+        loadMessages(conversationId, recipientId)
         viewModelScope.launch {
             val session = sessionManager.sessionFlow.filterNotNull().first()
             currentUserId = session.userId
@@ -48,6 +48,7 @@ class ChatDetailsViewModel(
         viewModelScope.launch{
             _messagesUi.update { it.copy(isLoading = true) }
             try {
+                messageRepo.syncPendingMessages(conversationId)
                 val messages = messageRepo.getUsersMessages(conversationId)
                 val recipient = messageRepo.fetchUser(recipientId)
 
@@ -89,28 +90,23 @@ class ChatDetailsViewModel(
 
         viewModelScope.launch {
             try {
-                val realMessageId = messageRepo.insertMessage(pendingMessage.copy(status = MessageStatus.sent))
+                val result = messageRepo.insertMessage(pendingMessage.copy(status = MessageStatus.sending))
 
-                _messagesUi.update { ui ->
-                    ui.copy(
-                        messages = ui.messages.map { msg ->
-                            if (msg.metadata == tempId) {
-                                msg.copy(
-                                    id = realMessageId,
-                                    status = MessageStatus.sent
-                                )
-                            } else msg
-                        }
-                    )
+                if (result.isSynced) {
+                    _messagesUi.update { ui ->
+                        ui.copy(
+                            messages = ui.messages.map { msg ->
+                                if (msg.metadata == tempId) {
+                                    msg.copy(
+                                        id = result.messageId,
+                                        status = MessageStatus.sent
+                                    )
+                                } else msg
+                            }
+                        )
+                    }
                 }
             } catch (e: Exception) {
-                _messagesUi.update { ui ->
-                    ui.copy(
-                        messages = ui.messages.map { msg ->
-                            if (msg.metadata == tempId) msg.copy(status = MessageStatus.error) else msg
-                        }
-                    )
-                }
                 Log.e("ChatDetailsViewModel", "Error sending message",e)
             }
         }

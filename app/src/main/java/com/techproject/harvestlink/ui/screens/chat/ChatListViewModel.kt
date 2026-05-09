@@ -32,6 +32,7 @@ class ChatListViewModel(
         viewModelScope.launch {
             _chatListUiState.update { it.copy(isLoadingConversations = true) }
             try {
+                messageRepo.syncPendingMessages()
                 val session = sessionManager.sessionFlow.filterNotNull().first()
                 val conversations = messageRepo.getConversations(session.userId)
                 _chatListUiState.update {

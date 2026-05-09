@@ -23,6 +23,12 @@ import kotlinx.serialization.json.putJsonArray
 
 object MoreData {
 
+    private var cacheDao: HarvestDao? = null
+
+    fun initCache(dao: HarvestDao) {
+        cacheDao = dao
+    }
+
     // ─── Auth ────────────────────────────────────────────────────────────────
 
     suspend fun signUp(
@@ -55,26 +61,52 @@ object MoreData {
     // ─── Farmers ─────────────────────────────────────────────────────────────
 
     suspend fun fetchFarmers(): List<Farmer> {
-        return SupabaseService.client.from("farmers_list").select().decodeList<Farmer>()
+        return try {
+            val remote = SupabaseService.client.from("farmers_list").select().decodeList<Farmer>()
+            cacheDao?.replaceFarmers(remote.map { it.toEntity() })
+            remote
+        } catch (e: Exception) {
+            cacheDao?.getFarmers()?.map { it.toModel() } ?: emptyList()
+        }
     }
 
     suspend fun fetchFarmerById(farmerId: String): Farmer? {
-        return SupabaseService.client.from("farmers_list")
-            .select { filter { eq("id", farmerId) } }
-            .decodeList<Farmer>()
-            .firstOrNull()
+        return try {
+            val remote = SupabaseService.client.from("farmers_list")
+                .select { filter { eq("id", farmerId) } }
+                .decodeList<Farmer>()
+                .firstOrNull()
+            if (remote != null) {
+                cacheDao?.upsertFarmers(listOf(remote.toEntity()))
+            }
+            remote
+        } catch (e: Exception) {
+            cacheDao?.getFarmerById(farmerId)?.toModel()
+        }
     }
 
     // ─── Produce / Farmer Listings ───────────────────────────────────────────
 
     suspend fun fetchProduce(): List<Produce> {
-        return SupabaseService.client.from("produce_details").select().decodeList<Produce>()
+        return try {
+            val remote = SupabaseService.client.from("produce_details").select().decodeList<Produce>()
+            cacheDao?.replaceProduce(remote.map { it.toEntity() })
+            remote
+        } catch (e: Exception) {
+            cacheDao?.getProduce()?.map { it.toModel() } ?: emptyList()
+        }
     }
 
     suspend fun fetchFarmerProduce(farmerId: String): List<Produce> {
-        return SupabaseService.client.from("produce_details")
-            .select { filter { eq("farmer_id", farmerId) } }
-            .decodeList<Produce>()
+        return try {
+            val remote = SupabaseService.client.from("produce_details")
+                .select { filter { eq("farmer_id", farmerId) } }
+                .decodeList<Produce>()
+            cacheDao?.replaceProduceForFarmer(farmerId, remote.map { it.toEntity() })
+            remote
+        } catch (e: Exception) {
+            cacheDao?.getProduceByFarmer(farmerId)?.map { it.toModel() } ?: emptyList()
+        }
     }
 
     suspend fun fetchFarmerListings(farmerId: String? = null): List<Produce> {
@@ -124,7 +156,13 @@ object MoreData {
     // ─── Buyers ───────────────────────────────────────────────────────────────
 
     suspend fun fetchBuyers(): List<Buyer> {
-        return SupabaseService.client.from("buyers_list").select().decodeList<Buyer>()
+        return try {
+            val remote = SupabaseService.client.from("buyers_list").select().decodeList<Buyer>()
+            cacheDao?.replaceBuyers(remote.map { it.toEntity() })
+            remote
+        } catch (e: Exception) {
+            cacheDao?.getBuyers()?.map { it.toModel() } ?: emptyList()
+        }
     }
 
     suspend fun updateBuyer(buyer: Buyer) {
@@ -150,9 +188,15 @@ object MoreData {
     // ─── Orders ───────────────────────────────────────────────────────────────
 
     suspend fun fetchBuyerOrders(userId: String): List<OrderDetails> {
-        return SupabaseService.client.from("order_details").select {
-            filter { eq("buyer_id", userId) }
-        }.decodeList<OrderDetails>()
+        return try {
+            val remote = SupabaseService.client.from("order_details").select {
+                filter { eq("buyer_id", userId) }
+            }.decodeList<OrderDetails>()
+            cacheDao?.replaceOrderDetailsForBuyer(userId, remote.map { it.toEntity() })
+            remote
+        } catch (e: Exception) {
+            cacheDao?.getOrderDetailsForBuyer(userId)?.map { it.toModel() } ?: emptyList()
+        }
     }
 
     suspend fun placeOrder(order: Order,orderItems: List<OrderItem>): Long{
