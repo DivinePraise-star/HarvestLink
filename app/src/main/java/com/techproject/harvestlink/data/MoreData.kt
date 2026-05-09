@@ -88,6 +88,24 @@ object MoreData {
         }
     }
 
+    suspend fun updateFarmer(farmer: Farmer) {
+        try {
+            val payload = buildJsonObject {
+                put("p_user_id", farmer.id)
+                farmer.name.takeIf { it.isNotBlank() }?.let { put("p_name", it) }
+                farmer.email.takeIf { it.isNotBlank() }?.let { put("p_email", it) }
+                farmer.phoneNumber.takeIf { it.isNotBlank() }?.let { put("p_phone_number", it) }
+                farmer.location.takeIf { it.isNotBlank() }?.let { put("p_location", it) }
+                farmer.farmName?.let { put("p_farm_name", it) }
+            }
+            SupabaseService.client.postgrest.rpc("update_farmer", payload)
+            cacheDao?.upsertFarmers(listOf(farmer.toEntity()))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw e
+        }
+    }
+
     // ─── Produce / Farmer Listings ───────────────────────────────────────────
 
     suspend fun fetchProduce(): List<Produce> {
@@ -189,11 +207,19 @@ object MoreData {
 
     suspend fun updateBuyer(buyer: Buyer) {
         try {
-            SupabaseService.client.from("buyers").update(buyer) {
-                filter { eq("id", buyer.id) }
+            val payload = buildJsonObject {
+                put("p_user_id", buyer.id)
+                buyer.name.takeIf { it.isNotBlank() }?.let { put("p_name", it) }
+                buyer.email.takeIf { it.isNotBlank() }?.let { put("p_email", it) }
+                buyer.phoneNumber.takeIf { it.isNotBlank() }?.let { put("p_phone_number", it) }
+                buyer.deliveryAddress?.let { put("p_delivery_address", it) }
+                buyer.preferredPaymentMethod?.let { put("p_preferred_payment_method", it) }
             }
+            SupabaseService.client.postgrest.rpc("update_buyer", payload)
+            cacheDao?.upsertBuyers(listOf(buyer.toEntity()))
         } catch (e: Exception) {
             e.printStackTrace()
+            throw e
         }
     }
 

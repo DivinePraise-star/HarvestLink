@@ -48,6 +48,9 @@ class HarvestViewModel(
     var buyerProfile by mutableStateOf<Buyer>(Buyer())
         private set
 
+    var farmerProfile by mutableStateOf<Farmer>(Farmer())
+        private set
+
     // Data for Buyer Home
     var farmersList by mutableStateOf<List<Farmer>>(emptyList())
         private set
@@ -93,6 +96,8 @@ class HarvestViewModel(
                         )
                         if (session.role == "buyer") {
                             loadBuyerData()
+                        } else if (session.role == "farmer") {
+                            loadFarmerData()
                         }
                     } catch (_: Exception) {
                         sessionManager.clearSession()
@@ -144,7 +149,9 @@ class HarvestViewModel(
 
     fun setRole(isFarmer: Boolean) {
         homeUiState = homeUiState.copy(isFarmer = isFarmer)
-        if (!isFarmer) {
+        if (isFarmer) {
+            loadFarmerData()
+        } else {
             loadBuyerData()
         }
         // Save the current session
@@ -194,6 +201,17 @@ class HarvestViewModel(
         }
     }
 
+    private fun loadFarmerData() {
+        viewModelScope.launch {
+            try {
+                val farmer = MoreData.fetchFarmerById(currentUserId)
+                farmerProfile = farmer ?: Farmer()
+            } catch (e: Exception) {
+                // Handle error
+            }
+        }
+    }
+
     private fun loadProduce() {
         produceLoading = true
         produceError = null
@@ -215,10 +233,25 @@ class HarvestViewModel(
     }
 
     fun updateProfile(buyer: Buyer) {
+        updateBuyer(buyer)
+    }
+
+    fun updateBuyer(buyer: Buyer) {
         viewModelScope.launch {
             try {
                 MoreData.updateBuyer(buyer)
                 buyerProfile = buyer
+            } catch (e: Exception) {
+                // Handle error
+            }
+        }
+    }
+
+    fun updateFarmer(farmer: Farmer) {
+        viewModelScope.launch {
+            try {
+                MoreData.updateFarmer(farmer)
+                farmerProfile = farmer
             } catch (e: Exception) {
                 // Handle error
             }
@@ -290,6 +323,7 @@ class HarvestViewModel(
     fun enterGuestMode() {
         currentUserId = ""
         buyerProfile = Buyer(name = "Guest")
+        farmerProfile = Farmer()
         activeOrdersCount = 0
         homeUiState = homeUiState.copy(
             beginner = false,
@@ -324,6 +358,7 @@ class HarvestViewModel(
         )
         currentUserId = ""
         buyerProfile = Buyer()
+        farmerProfile = Farmer()
     }
 
     fun toggleFarmer(){

@@ -19,27 +19,41 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
 import com.techproject.harvestlink.R
 import com.techproject.harvestlink.ui.HarvestViewModel
+import com.techproject.harvestlink.util.hasInternetConnection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     harvestViewModel: HarvestViewModel
 ) {
+    val isFarmer = harvestViewModel.homeUiState.isFarmer
     val buyer = harvestViewModel.buyerProfile
+    val farmer = harvestViewModel.farmerProfile
+    val context = LocalContext.current
     var isEditing by rememberSaveable { mutableStateOf(false) }
     
     // Form states
-    var name by rememberSaveable(buyer) { mutableStateOf(buyer?.name ?: "") }
-    var email by rememberSaveable(buyer) { mutableStateOf(buyer?.email ?: "") }
-    var phoneNumber by rememberSaveable(buyer) { mutableStateOf(buyer?.phoneNumber ?: "") }
-    var deliveryAddress by rememberSaveable(buyer) { mutableStateOf(buyer?.deliveryAddress ?: "") }
-    var preferredPaymentMethod by rememberSaveable(buyer) { mutableStateOf(buyer?.preferredPaymentMethod ?: "") }
+    var name by rememberSaveable(isFarmer, buyer, farmer) {
+        mutableStateOf(if (isFarmer) farmer.name else buyer.name)
+    }
+    var email by rememberSaveable(isFarmer, buyer, farmer) {
+        mutableStateOf(if (isFarmer) farmer.email else buyer.email)
+    }
+    var phoneNumber by rememberSaveable(isFarmer, buyer, farmer) {
+        mutableStateOf(if (isFarmer) farmer.phoneNumber else buyer.phoneNumber)
+    }
+    var deliveryAddress by rememberSaveable(buyer) { mutableStateOf(buyer.deliveryAddress ?: "") }
+    var preferredPaymentMethod by rememberSaveable(buyer) { mutableStateOf(buyer.preferredPaymentMethod ?: "") }
+    var location by rememberSaveable(farmer) { mutableStateOf(farmer.location) }
+    var farmName by rememberSaveable(farmer) { mutableStateOf(farmer.farmName ?: "") }
 
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
 
@@ -56,7 +70,7 @@ fun ProfileScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "My Profile",
+                text = if (isFarmer) "My Farmer Profile" else "My Profile",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF1B3D2F)
@@ -91,24 +105,56 @@ fun ProfileScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         if (isEditing) {
-            ProfileEditForm(
-                name = name,
-                onNameChange = { name = it },
-                email = email,
-                onEmailChange = { email = it },
-                phoneNumber = phoneNumber,
-                onPhoneNumberChange = { phoneNumber = it },
-                deliveryAddress = deliveryAddress,
-                onDeliveryAddressChange = { deliveryAddress = it },
-                preferredPaymentMethod = preferredPaymentMethod,
-                onPreferredPaymentMethodChange = { preferredPaymentMethod = it }
-            )
+            if (isFarmer) {
+                FarmerEditForm(
+                    name = name,
+                    onNameChange = { name = it },
+                    email = email,
+                    onEmailChange = { email = it },
+                    phoneNumber = phoneNumber,
+                    onPhoneNumberChange = { phoneNumber = it },
+                    location = location,
+                    onLocationChange = { location = it },
+                    farmName = farmName,
+                    onFarmNameChange = { farmName = it }
+                )
+            } else {
+                ProfileEditForm(
+                    name = name,
+                    onNameChange = { name = it },
+                    email = email,
+                    onEmailChange = { email = it },
+                    phoneNumber = phoneNumber,
+                    onPhoneNumberChange = { phoneNumber = it },
+                    deliveryAddress = deliveryAddress,
+                    onDeliveryAddressChange = { deliveryAddress = it },
+                    preferredPaymentMethod = preferredPaymentMethod,
+                    onPreferredPaymentMethodChange = { preferredPaymentMethod = it }
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
                 onClick = {
-                    if (buyer != null) {
+                    if (!hasInternetConnection(context)) {
+                        Toast.makeText(
+                            context,
+                            "Internet connection required to update profile.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return@Button
+                    }
+                    if (isFarmer) {
+                        val updatedFarmer = farmer.copy(
+                            name = name,
+                            email = email,
+                            phoneNumber = phoneNumber,
+                            location = location,
+                            farmName = farmName.ifBlank { null }
+                        )
+                        harvestViewModel.updateFarmer(updatedFarmer)
+                    } else {
                         val updatedBuyer = buyer.copy(
                             name = name,
                             email = email,
@@ -116,9 +162,9 @@ fun ProfileScreen(
                             deliveryAddress = deliveryAddress,
                             preferredPaymentMethod = preferredPaymentMethod
                         )
-                        harvestViewModel.updateProfile(updatedBuyer)
-                        isEditing = false
+                        harvestViewModel.updateBuyer(updatedBuyer)
                     }
+                    isEditing = false
                 },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B3D2F)),
@@ -136,28 +182,64 @@ fun ProfileScreen(
                 Text("Cancel", color = Color.Gray)
             }
         } else {
-            ProfileInfoSection(
-                label = "Full Name",
-                value = buyer?.name ?: "N/A"
-            )
-            ProfileInfoSection(
-                label = "Email Address",
-                value = buyer?.email ?: "N/A"
-            )
-            ProfileInfoSection(
-                label = "Phone Number",
-                value = buyer?.phoneNumber ?: "N/A"
-            )
-            ProfileInfoSection(
-                label = "Delivery Address",
-                value = buyer?.deliveryAddress ?: "N/A"
-            )
-            ProfileInfoSection(
-                label = "Preferred Payment",
-                value = buyer?.preferredPaymentMethod ?: "N/A"
-            )
-            
-            if (buyer != null) {
+            if (isFarmer) {
+                ProfileInfoSection(
+                    label = "Full Name",
+                    value = farmer.name.ifBlank { "N/A" }
+                )
+                ProfileInfoSection(
+                    label = "Email Address",
+                    value = farmer.email.ifBlank { "N/A" }
+                )
+                ProfileInfoSection(
+                    label = "Phone Number",
+                    value = farmer.phoneNumber.ifBlank { "N/A" }
+                )
+                ProfileInfoSection(
+                    label = "Farm Name",
+                    value = farmer.farmName?.ifBlank { "N/A" } ?: "N/A"
+                )
+                ProfileInfoSection(
+                    label = "Location",
+                    value = farmer.location.ifBlank { "N/A" }
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(text = "Farm Stats", fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
+                        val ratingText = if (farmer.rating > 0) farmer.rating.toString() else "N/A"
+                        val salesText = if (farmer.salesCompleted > 0) "${farmer.salesCompleted}" else "0"
+                        Text(text = "Rating: $ratingText", fontSize = 14.sp)
+                        Text(text = "Sales Completed: $salesText", fontSize = 14.sp)
+                    }
+                }
+            } else {
+                ProfileInfoSection(
+                    label = "Full Name",
+                    value = buyer.name.ifBlank { "N/A" }
+                )
+                ProfileInfoSection(
+                    label = "Email Address",
+                    value = buyer.email.ifBlank { "N/A" }
+                )
+                ProfileInfoSection(
+                    label = "Phone Number",
+                    value = buyer.phoneNumber.ifBlank { "N/A" }
+                )
+                ProfileInfoSection(
+                    label = "Delivery Address",
+                    value = buyer.deliveryAddress?.ifBlank { "N/A" } ?: "N/A"
+                )
+                ProfileInfoSection(
+                    label = "Preferred Payment",
+                    value = buyer.preferredPaymentMethod?.ifBlank { "N/A" } ?: "N/A"
+                )
+
                 Spacer(modifier = Modifier.height(16.dp))
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -202,7 +284,17 @@ fun ProfileScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = { showDeleteDialog = true },
+            onClick = {
+                if (!hasInternetConnection(context)) {
+                    Toast.makeText(
+                        context,
+                        "Internet connection required to delete account.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@Button
+                }
+                showDeleteDialog = true
+            },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFEEBEE)),
             shape = RoundedCornerShape(12.dp)
@@ -227,6 +319,14 @@ fun ProfileScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        if (!hasInternetConnection(context)) {
+                            Toast.makeText(
+                                context,
+                                "Internet connection required to delete account.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            return@TextButton
+                        }
                         harvestViewModel.deleteAccount {
                             harvestViewModel.logout()
                         }
@@ -301,6 +401,54 @@ fun ProfileEditForm(
             value = preferredPaymentMethod,
             onValueChange = onPreferredPaymentMethodChange,
             label = { Text("Preferred Payment Method") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        )
+    }
+}
+
+@Composable
+fun FarmerEditForm(
+    name: String, onNameChange: (String) -> Unit,
+    email: String, onEmailChange: (String) -> Unit,
+    phoneNumber: String, onPhoneNumberChange: (String) -> Unit,
+    location: String, onLocationChange: (String) -> Unit,
+    farmName: String, onFarmNameChange: (String) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        OutlinedTextField(
+            value = name,
+            onValueChange = onNameChange,
+            label = { Text("Full Name") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        )
+        OutlinedTextField(
+            value = email,
+            onValueChange = onEmailChange,
+            label = { Text("Email Address") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            enabled = false
+        )
+        OutlinedTextField(
+            value = phoneNumber,
+            onValueChange = onPhoneNumberChange,
+            label = { Text("Phone Number") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        )
+        OutlinedTextField(
+            value = farmName,
+            onValueChange = onFarmNameChange,
+            label = { Text("Farm Name") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        )
+        OutlinedTextField(
+            value = location,
+            onValueChange = onLocationChange,
+            label = { Text("Location") },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp)
         )
