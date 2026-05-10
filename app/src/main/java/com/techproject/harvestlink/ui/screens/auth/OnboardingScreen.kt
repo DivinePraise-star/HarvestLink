@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.with
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -25,10 +26,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
+import com.techproject.harvestlink.R
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 
@@ -39,7 +44,8 @@ data class OnboardingPage(
     val featureTitle: String,
     val featureDescription: String,
     val trustTitle: String,
-    val trustDescription: String
+    val trustDescription: String,
+    val image: Int
 )
 
 val onboardingPages = listOf(
@@ -49,7 +55,8 @@ val onboardingPages = listOf(
         featureTitle = "Farm to Table, No Middlemen",
         featureDescription = "Connect directly with local farmers and get the freshest produce at fair prices.",
         trustTitle = "Trusted & Transparent",
-        trustDescription = "Verified farmers, real-time listings, and secure transactions you can count on."
+        trustDescription = "Verified farmers, real-time listings, and secure transactions you can count on.",
+        image = R.drawable.screen1
     ),
     OnboardingPage(
         mainTitle = "HarvestLink",
@@ -57,7 +64,8 @@ val onboardingPages = listOf(
         featureTitle = "Fresh Daily Harvest",
         featureDescription = "Browse hundreds of fresh vegetables, fruits, and grains harvested daily just for you.",
         trustTitle = "Support Local Farmers",
-        trustDescription = "Every purchase directly supports small-scale farmers and sustainable agriculture."
+        trustDescription = "Every purchase directly supports small-scale farmers and sustainable agriculture.",
+        image = R.drawable.screen2
     ),
     OnboardingPage(
         mainTitle = "HarvestLink",
@@ -65,7 +73,8 @@ val onboardingPages = listOf(
         featureTitle = "Seamless Delivery",
         featureDescription = "Get your orders delivered right to your doorstep with real-time order tracking.",
         trustTitle = "Secure Payments",
-        trustDescription = "Multiple payment options with 100% secure and protected transactions."
+        trustDescription = "Multiple payment options with 100% secure and protected transactions.",
+        image = R.drawable.screen3
     )
 )
 
@@ -252,10 +261,14 @@ fun OnboardingPageContent(
             modifier = Modifier
                 .size(56.dp)
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFF1B3D2F).copy(alpha = 0.1f)),
+                .background(Color(0xFF1B3D2F)),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = "🌾", fontSize = 28.sp)
+            Image(
+                painter = painterResource(R.drawable.ic_launcher_foreground),
+                contentDescription = null,
+                contentScale = ContentScale.Crop
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -283,7 +296,7 @@ fun OnboardingPageContent(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp)
+                .height(300.dp)
                 .graphicsLayer {
                     scaleX = illustrationScale
                     scaleY = illustrationScale
@@ -291,39 +304,51 @@ fun OnboardingPageContent(
             shape = RoundedCornerShape(24.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(Color(0xFFF0F5F2), Color(0xFFE2EBE5))
+            Box(modifier = Modifier.fillMaxSize()) {
+                Image(
+                    painter = painterResource(page.image),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                // Bottom scrim for readable text over the image
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color(0x99000000)
+                                )
+                            )
                         )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = "🌱", fontSize = 56.sp)
-                    Spacer(modifier = Modifier.height(8.dp))
+                )
+
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(16.dp)
+                ) {
                     Text(
-                        text = "Illustration",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF1B3D2F).copy(alpha = 0.5f)
+                        text = page.featureTitle,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = page.featureDescription,
+                        fontSize = 13.sp,
+                        color = Color.White.copy(alpha = 0.92f),
+                        lineHeight = 18.sp
                     )
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(32.dp))
-
-        // Feature items
-        FeatureItem(
-            emoji = "📄",
-            title = page.featureTitle,
-            description = page.featureDescription
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
 
         FeatureItem(
             emoji = "✓",
